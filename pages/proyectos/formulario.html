@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto — Sistema de Tesis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+    <!-- header -->
+    <header class="navbar navbar-dark bg-dark px-4 py-2">
+        <span class="navbar-brand fw-bold">Sistema de Gestión de Tesis</span>
+    </header>
+
+    <!-- navegacion -->
+    <nav class="navbar navbar-dark bg-secondary px-4 py-1">
+        <div class="d-flex gap-3 flex-wrap">
+            <a href="../dashboard.html" class="nav-link">Inicio</a>
+            <a href="lista.html" class="nav-link activo">Proyectos</a>
+            <a href="../avances/lista.html" class="nav-link">Avances</a>
+            <a href="../tutorias/lista.html" class="nav-link">Tutorías</a>
+            <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
+            <a href="../usuarios/lista.html" class="nav-link">Usuarios</a>
+        </div>
+    </nav>
+
+    <!-- main -->
+    <main class="flex-grow-1 p-4">
+        <h2 class="mb-4" id="titulo-pagina">Nuevo Proyecto</h2>
+        <div class="card shadow-sm" style="max-width: 700px;">
+            <div class="card-body">
+
+                <!--Mensjes informativos-->
+                <div class="alert alert-danger d-none" id="alerta-error"></div>
+                <div class="alert alert-success d-none" id="alerta-exito"></div>
+
+                <form onsubmit="guardar(event)">
+                    <div class="mb-3">
+                        <label for="titulo" class="form-label">Título del proyecto: *</label>
+                        <input type="text" id="titulo" name="titulo" class="form-control"
+                               required placeholder="Ej: Sistema de gestión de inventario">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción:</label>
+                        <textarea id="descripcion" name="descripcion" class="form-control"
+                                  placeholder="Describe brevemente el proyecto..." rows="4"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="estudiante_id" class="form-label">Estudiante: *</label>
+                        <select id="estudiante_id" name="estudiante_id" class="form-select" required>
+                            <option value="">— Selecciona un estudiante —</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="tutor_id" class="form-label">Tutor asignado:</label>
+                        <select id="tutor_id" name="tutor_id" class="form-select">
+                            <option value="0">— Sin asignar —</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="estado" class="form-label">Estado:</label>
+                        <select id="estado" name="estado" class="form-select">
+                            <option value="aprobado">Aprobado</option>
+                            <option value="en-curso">En curso</option>
+                            <option value="revision">En revisión</option>
+                            <option value="suspendido">Suspendido</option>
+                            <option value="completado">Completado</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_inicio" class="form-label">Fecha de inicio: *</label>
+                            <input type="date" id="fecha_inicio" name="fecha_inicio"
+                                   class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_fin" class="form-label">Fecha de fin estimada: *</label>
+                            <input type="date" id="fecha_fin" name="fecha_fin"
+                                   class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="progreso" class="form-label">Porcentaje de progreso: (0 a 100)</label>
+                        <input type="number" id="progreso" name="progreso" class="form-control"
+                               min="0" max="100" value="0">
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a href="lista.html" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success">Guardar proyecto</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- footer -->
+    <footer class="bg-dark text-white text-center py-2 small">
+        &copy; 2026 Sistema de Gestión de Proyectos de Tesis 
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/app.js"></script>
+    <script>
+        // Llenar los selects de estudiantes y tutores con los usuarios reales
+        var usuarios = getUsuarios();
+        var selectEstudiante = document.getElementById('estudiante_id');
+        var selectTutor      = document.getElementById('tutor_id');
+
+        usuarios.forEach(function(u) {
+            var opcion = document.createElement('option');
+            opcion.value       = u.id;
+            opcion.textContent = u.nombre;
+
+            if (u.rol === 'estudiante') 
+                selectEstudiante.appendChild(opcion);
+
+            if (u.rol === 'tutor')      
+                selectTutor.appendChild(opcion);
+        });
+
+        //Detectar si estamos editando un proyecto existente
+        //URLSearchParams lee los parámetros de la URL (lo que viene después del "?")
+        var params    = new URLSearchParams(window.location.search);
+        var idEdicion = params.get('id'); // null si no hay ?id en la URL
+
+        var proyectoEditar = null;
+
+        if (idEdicion) {
+            //Modo edicion de un proyecto
+            var todosLosProyectos = getProyectos();
+            proyectoEditar = todosLosProyectos.find(function(p) {
+                return p.id == idEdicion;
+            });
+
+            if (proyectoEditar) {
+                // Cambiar el título de la página
+                document.getElementById('titulo-pagina').textContent = 'Editar Proyecto';
+
+                // Rellenar cada campo del formulario con los datos actuales
+                document.getElementById('titulo').value        = proyectoEditar.titulo;
+                document.getElementById('descripcion').value   = proyectoEditar.descripcion;
+                document.getElementById('estado').value        = proyectoEditar.estado;
+                document.getElementById('fecha_inicio').value  = proyectoEditar.fecha_inicio;
+                document.getElementById('fecha_fin').value     = proyectoEditar.fecha_fin;
+                document.getElementById('progreso').value      = proyectoEditar.progreso;
+
+                document.getElementById('estudiante_id').value = proyectoEditar.estudiante_id;
+                document.getElementById('tutor_id').value      = proyectoEditar.tutor_id || '0';
+            }
+        }
+
+        // Función para mostrar alertas con Bootstrap
+        function mostrarAlerta(id, mensaje, tipo) {
+            var el = document.getElementById(id);
+            el.textContent = mensaje;
+            // Quita d-none para que sea visible
+            el.classList.remove('d-none');
+            // Si es éxito, ocultamos sola después de 3 segundos
+            if (tipo === 'exito') {
+                setTimeout(function() { el.classList.add('d-none'); }, 3000);
+            }
+        }
+
+        // Se llama cuando el usuario envía el formulario
+        function guardar(event) {
+            event.preventDefault();
+
+            // Ocultar alertas anteriores antes de validar
+            document.getElementById('alerta-error').classList.add('d-none');
+            document.getElementById('alerta-exito').classList.add('d-none');
+
+            // Leer todos los valores del formulario
+            var titulo        = document.getElementById('titulo').value.trim();
+            var descripcion   = document.getElementById('descripcion').value.trim();
+            var estudiante_id = parseInt(document.getElementById('estudiante_id').value);
+            var tutor_id      = parseInt(document.getElementById('tutor_id').value) || 0;
+            var estado        = document.getElementById('estado').value;
+            var fecha_inicio  = document.getElementById('fecha_inicio').value;
+            var fecha_fin     = document.getElementById('fecha_fin').value;
+            var progreso      = parseInt(document.getElementById('progreso').value) || 0;
+
+            // Validaciones
+            if (!titulo) {
+                mostrarAlerta('alerta-error', 'El título del proyecto es obligatorio.', 'error');
+                return;
+            }
+            if (!estudiante_id) {
+                mostrarAlerta('alerta-error', 'Debes seleccionar un estudiante.', 'error');
+                return;
+            }
+            if (!fecha_inicio || !fecha_fin) {
+                mostrarAlerta('alerta-error', 'Las fechas de inicio y fin son obligatorias.', 'error');
+                return;
+            }
+            if (fecha_fin < fecha_inicio) {
+                mostrarAlerta('alerta-error', 'La fecha de fin no puede ser anterior a la de inicio.', 'error');
+                return;
+            }
+
+            var proyectos = getProyectos();
+
+            if (proyectoEditar) {
+                // actualiza el proyecto existente
+                for (var i = 0; i < proyectos.length; i++) {
+                    if (proyectos[i].id == idEdicion) {
+                        proyectos[i].titulo        = titulo;
+                        proyectos[i].descripcion   = descripcion;
+                        proyectos[i].estudiante_id = estudiante_id;
+                        proyectos[i].tutor_id      = tutor_id;
+                        proyectos[i].estado        = estado;
+                        proyectos[i].fecha_inicio  = fecha_inicio;
+                        proyectos[i].fecha_fin     = fecha_fin;
+                        proyectos[i].progreso      = progreso;
+                        break;
+                    }
+                }
+                guardarProyectos(proyectos);
+                mostrarAlerta('alerta-exito', 'Proyecto actualizado correctamente.', 'exito');
+
+            } else {
+                // crea nuevo objeto 
+                var nuevoProyecto = {
+                    id:            nuevoId(proyectos),
+                    titulo:        titulo,
+                    descripcion:   descripcion,
+                    estudiante_id: estudiante_id,
+                    tutor_id:      tutor_id,
+                    estado:        estado,
+                    fecha_inicio:  fecha_inicio,
+                    fecha_fin:     fecha_fin,
+                    progreso:      progreso
+                };
+                proyectos.push(nuevoProyecto);
+                guardarProyectos(proyectos);
+                mostrarAlerta('alerta-exito', 'Proyecto creado correctamente.', 'exito');
+                document.querySelector('form').reset(); // limpiar el formulario
+            }
+
+            // Redirigir a la lista después de 1.5 segundos
+            setTimeout(function() {
+                window.location.href = 'lista.html';
+            }, 1500);
+        }
+    </script>
+
+</body>
+</html>
