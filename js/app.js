@@ -82,6 +82,9 @@ function getAvances() {
 function getTutorias() {
     return JSON.parse(localStorage.getItem('tesis_tutorias')) || [];
 }
+function guardarTutorias(lista) {
+    localStorage.setItem('tesis_tutorias', JSON.stringify(lista));
+}
 
 function getAsistencia() {
     return JSON.parse(localStorage.getItem('tesis_asistencia')) || [];
