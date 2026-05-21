@@ -92,45 +92,45 @@
                         </li>
                     </ul>
 
+                    <!--LOGIN-->
                     <div class="tab-content">
-                        <!-- LOGIN -->
                         <div class="tab-pane fade show active" id="login-content">
                             <form id="formLogin">
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold text-muted text-uppercase">Usuario / Email</label>
-                                    <input type="email" class="form-control form-control-lg fs-6" placeholder="admin@tesis.com" required>
+                                    <input type="email" id="emailLogin" class="form-control form-control-lg fs-6" placeholder="admin@tesis.com" required>
                                 </div>
                                 <div class="mb-4">
                                     <label class="form-label small fw-bold text-muted text-uppercase">Contraseña</label>
-                                    <input type="password" class="form-control form-control-lg fs-6" placeholder="••••••••" required>
+                                    <input type="password" id="passwordLogin" class="form-control form-control-lg fs-6" placeholder="••••••••" required>
                                 </div>
-                                <button type="submit" class="btn btn-primary-dashboard text-white w-100">INICAR SECCION</button>
+                                <button type="submit" class="btn btn-primary-dashboard text-white w-100">INICIAR SESIÓN</button>
                             </form>
                         </div>
 
-                        <!-- REGISTRO -->
+                        <!--REGISTRO-->
                         <div class="tab-pane fade" id="reg-content">
                             <form id="formRegister">
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold text-muted text-uppercase">Nombre Completo</label>
-                                    <input type="text" class="form-control fs-6" placeholder="Ej: Jhon Doe" required>
+                                    <input type="text" id="nombreRegister" class="form-control fs-6" placeholder="Ej: Jhon Doe" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold text-muted text-uppercase">Rol del Sistema</label>
-                                    <select class="form-select fs-6" required>
+                                    <select id="rolRegister" class="form-select fs-6" required>
                                         <option value="" selected disabled>Seleccionar...</option>
-                                        <option>Estudiante</option>
-                                        <option>Tutor</option>
-                                        <option>Coordinador</option>
+                                        <option value="estudiante">Estudiante</option>
+                                        <option value="tutor">Tutor</option>
+                                        <option value="coordinador">Coordinador</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold text-muted text-uppercase">Correo</label>
-                                    <input type="email" class="form-control fs-6" placeholder="ejemplo@gmail.com" required >
+                                    <input type="email" id="emailRegister" class="form-control fs-6" placeholder="ejemplo@gmail.com" required >
                                 </div>
                                 <div class="mb-4">
                                     <label class="form-label small fw-bold text-muted text-uppercase">Contraseña</label>
-                                    <input type="password" class="form-control fs-6" placeholder="••••••••" required>
+                                    <input type="password" id="passwordRegister" class="form-control fs-6" placeholder="••••••••" required>
                                 </div>
                                 <button type="submit" class="btn btn-primary-dashboard text-white w-100">CREAR CUENTA</button>
                             </form>
@@ -139,7 +139,6 @@
                 </div>
             </div>
 
-            <!-- Alerta de simulación -->
             <div id="simAlert" class="alert alert-info mt-3 d-none border-0 shadow-sm" role="alert">
                 <small id="simText"></small>
             </div>
@@ -151,27 +150,88 @@
         &copy; 2026 Sistema de Gestión de Proyectos de Tesis
     </footer>
 
-    <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!--SIMULACION DE FUNCIONALIDADES-->
+
     <script>
+
         const simAlert = document.getElementById('simAlert');
         const simText = document.getElementById('simText');
 
-        function notify(msg) {
+        function notify(msg, type = 'info') {
+            simAlert.className = `alert alert-${type} mt-3 border-0 shadow-sm`;
             simAlert.classList.remove('d-none');
-            simText.innerText = "Simulación: " + msg;
-            setTimeout(() => simAlert.classList.add('d-none'), 3000);
+            simText.innerText = msg;
         }
 
+
+        // FUNCIONALIDAD DE LOGIN
         document.getElementById('formLogin').onsubmit = (e) => {
             e.preventDefault();
-            notify("Redirigiendo al Dashboard principal...");
+            
+            const emailInput = document.getElementById('emailLogin').value.trim();
+            
+            const usuarios = typeof getUsuarios === 'function' ? getUsuarios() : JSON.parse(localStorage.getItem('tesis_usuarios')) || [];
+            
+            // Busca las coincidencia por el email y en cuando la encuetra muestra un mensaje
+            const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === emailInput.toLowerCase());
+            
+            if (usuarioEncontrado) {
+                notify(`¡Acceso correcto! Bienvenido, ${usuarioEncontrado.nombre}.`, 'success');
+                
+                // Redirige al panel principal y muentras un mensaje
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 1200);
+            } else {
+                notify("Error: Las credenciales introducidas no constan en el sistema.", "danger");
+            }
         };
 
+
+        // FUNCIONALIDAD DE REGISTRO
         document.getElementById('formRegister').onsubmit = (e) => {
             e.preventDefault();
-            notify("Usuario registrado en el módulo 'Usuarios' (image_83a7c0.png).");
+            
+            const nombre = document.getElementById('nombreRegister').value.trim();
+            const email = document.getElementById('emailRegister').value.trim();
+            const rol = document.getElementById('rolRegister').value;
+            
+            let usuarios = typeof getUsuarios === 'function' ? getUsuarios() : JSON.parse(localStorage.getItem('tesis_usuarios')) || [];
+            
+            // Controla suceda el registro del mismo correo dos veces
+            const existe = usuarios.some(u => u.email.toLowerCase() === email.toLowerCase());
+            if (existe) {
+                notify("Este correo electrónico ya pertenece a una cuenta activa.", "warning");
+                return;
+            }
+            
+            let nuevo_id = 1;
+            if (typeof nuevoId === 'function') {
+                nuevo_id = nuevoId(usuarios);
+            } else {
+                nuevo_id = usuarios.length > 0 ? Math.max(...usuarios.map(u => u.id)) + 1 : 1;
+            }
+            
+            const nuevoUsuario = {
+                id: nuevo_id,
+                nombre: nombre,
+                email: email,
+                rol: rol
+            };
+            
+            usuarios.push(nuevoUsuario);
+            localStorage.setItem('tesis_usuarios', JSON.stringify(usuarios));
+            
+            notify("Usuario registrado exitosamente en la base de datos local.", "success");
+            document.getElementById('formRegister').reset();
+            
+
+            setTimeout(() => {
+                simAlert.classList.add('d-none');
+                const loginTab = new bootstrap.Tab(document.getElementById('tab-login'));
+                loginTab.show();
+                document.getElementById('emailLogin').value = email;
+            }, 1800);
         };
     </script>
 </body>
