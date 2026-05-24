@@ -24,6 +24,7 @@
             <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
             <a href="../usuarios/lista.html" class="nav-link">Usuarios</a>
         </div>
+    <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
     </nav>
 
     <!-- Main -->
@@ -34,7 +35,8 @@
         <div class="card shadow-sm">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-                    <a href="formulario.html" class="btn btn-success" id="btn-nueva">
+                    <!-- Solo visible para tutores y coordinadores -->
+                    <a href="formulario.html" class="btn btn-success d-none" id="btn-nueva">
                         + Nueva Tutoría
                     </a>
                 </div>
@@ -71,6 +73,15 @@
 
     <script src="../../js/app.js"></script>
     <script>
+        // --- Control de roles ---
+        // Tutores Y coordinadores pueden crear/editar/eliminar tutorías
+        var rol = getRolActual();
+        var puedeEditarTutorias = (rol === 'tutor' || rol === 'coordinador');
+
+        if (puedeEditarTutorias) {
+            document.getElementById('btn-nueva').classList.remove('d-none');
+        }
+
         var todasLasTutorias = getTutorias();
 
         var coloresBadge = {
@@ -103,11 +114,13 @@
                 var badgeEstado    = coloresBadge[tutoria.estado]       || 'bg-secondary';
                 var badgeModalidad = coloresModalidad[tutoria.modalidad] || 'bg-secondary';
 
-                var accionesHtml =
-                    '<a href="formulario.html?id=' + tutoria.id + '" ' +
-                    'class="btn btn-sm btn-outline-primary me-1">Editar</a>' +
-                    '<button onclick="eliminar(' + tutoria.id + ')" ' +
-                    'class="btn btn-sm btn-outline-danger">Eliminar</button>';
+                // Acciones: solo tutores y coordinadores
+                var accionesHtml = puedeEditarTutorias
+                    ? '<a href="formulario.html?id=' + tutoria.id + '" ' +
+                      'class="btn btn-sm btn-outline-primary me-1">Editar</a>' +
+                      '<button onclick="eliminar(' + tutoria.id + ')" ' +
+                      'class="btn btn-sm btn-outline-danger">Eliminar</button>'
+                    : '<span class="text-muted small">Solo lectura</span>';
 
                 var fila = document.createElement('tr');
                 fila.innerHTML =
@@ -128,8 +141,9 @@
         // Dibujar la tabla al cargar la página
         renderTabla(todasLasTutorias);
 
-        // Eliminar tutoría
+        // Eliminar tutoría (solo tutores y coordinadores)
         function eliminar(id) {
+            if (!puedeEditarTutorias) return;
             if (!confirm('¿Eliminar esta tutoría? Esta acción no se puede deshacer.'))
                 return;
 

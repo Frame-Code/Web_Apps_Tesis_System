@@ -24,6 +24,7 @@
             <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
             <a href="../usuarios/lista.html" class="nav-link">Usuarios</a>
         </div>
+    <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
     </nav>
 
     <!-- main -->
@@ -112,6 +113,14 @@
 
     <script src="../../js/app.js"></script>
     <script>
+        // --- Guard de rol: solo tutores y coordinadores pueden crear/editar tutorías ---
+        (function() {
+            var rol = getRolActual();
+            if (rol !== 'tutor' && rol !== 'coordinador') {
+                window.location.replace('lista.html');
+            }
+        })();
+
         // Llenar selects con datos reales
         var usuarios  = getUsuarios();
         var proyectos = getProyectos();

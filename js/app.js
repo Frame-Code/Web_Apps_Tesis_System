@@ -1,6 +1,4 @@
-// DATOS DE EJEMPLO
 // Carga datos en localStorage la primera vez que se abre la app.
-
 function cargarDatosEjemplo() {
     // "tesis_ok" es una bandera: si ya existe, no cargamos de nuevo.
     if (localStorage.getItem('tesis_ok')) 
@@ -86,6 +84,10 @@ function guardarTutorias(lista) {
     localStorage.setItem('tesis_tutorias', JSON.stringify(lista));
 }
 
+function guardarAvances(lista) {
+    localStorage.setItem('tesis_avances', JSON.stringify(lista));
+}
+
 function getAsistencia() {
     return JSON.parse(localStorage.getItem('tesis_asistencia')) || [];
 }
@@ -131,4 +133,30 @@ function mostrarError(idElemento, mensaje) {
     var el = document.getElementById(idElemento);
     el.textContent = mensaje;
     el.className = 'alerta alerta-error alerta-visible';
+}
+
+// Devuelve el objeto del usuario logueado (desde tesis_sesion_usuario) o null
+function getUsuarioActual() {
+    return JSON.parse(localStorage.getItem('tesis_sesion_usuario')) || null;
+}
+
+// Devuelve el rol del usuario logueado: 'tutor', 'coordinador', 'estudiante' o null
+function getRolActual() {
+    var u = getUsuarioActual();
+    return u ? u.rol : null;
+}
+
+// Cierra la sesión y redirige al login (funciona desde cualquier nivel de carpeta)
+function cerrarSesion() {
+    localStorage.removeItem('tesis_sesion_usuario');
+    var path      = window.location.pathname;
+    var pagesIdx  = path.indexOf('/pages/');
+    if (pagesIdx === -1) {
+        window.location.href = 'pages/login.html';
+        return;
+    }
+    var afterPages = path.substring(pagesIdx + 7); // texto después de '/pages/'
+    var depth      = afterPages.split('/').length - 1; // subdirectorios dentro de pages/
+    var prefix     = depth > 0 ? '../' : '';
+    window.location.href = prefix + 'login.html';
 }

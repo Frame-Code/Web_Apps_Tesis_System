@@ -24,6 +24,7 @@
             <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
             <a href="../usuarios/lista.html" class="nav-link">Usuarios</a>
         </div>
+    <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
     </nav>
 
     <!-- Main -->
@@ -34,7 +35,8 @@
         <div class="card shadow-sm">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-                    <a href="formulario.html" class="btn btn-success" id="btn-nuevo">
+                    <!-- Solo visible para tutores -->
+                    <a href="formulario.html" class="btn btn-success d-none" id="btn-nuevo">
                         + Nuevo Proyecto
                     </a>
                 </div>
@@ -70,6 +72,14 @@
 
     <script src="../../js/app.js"></script>
     <script>
+        // --- Control de roles ---
+        // Solo tutores pueden crear/editar/eliminar proyectos
+        var puedeEditarProyectos = (getRolActual() === 'tutor');
+
+        if (puedeEditarProyectos) {
+            document.getElementById('btn-nuevo').classList.remove('d-none');
+        }
+
         // Cargar todos los proyectos
         var todosLosProyectos = getProyectos();
         var proyectosAMostrar = todosLosProyectos;
@@ -98,12 +108,13 @@
                 var tutor      = proyecto.tutor_id ? getUsuarioPorId(proyecto.tutor_id) : null;
                 var badge      = coloresBadge[proyecto.estado] || 'bg-secondary';
 
-                // Botones de acción
-                var accionesHtml =
-                    '<a href="formulario.html?id=' + proyecto.id + '" ' +
-                    'class="btn btn-sm btn-outline-primary me-1">Editar</a>' +
-                    '<button onclick="eliminar(' + proyecto.id + ')" ' +
-                    'class="btn btn-sm btn-outline-danger">Eliminar</button>';
+                // Botones de acción: solo para tutores
+                var accionesHtml = puedeEditarProyectos
+                    ? '<a href="formulario.html?id=' + proyecto.id + '" ' +
+                      'class="btn btn-sm btn-outline-primary me-1">Editar</a>' +
+                      '<button onclick="eliminar(' + proyecto.id + ')" ' +
+                      'class="btn btn-sm btn-outline-danger">Eliminar</button>'
+                    : '<span class="text-muted small">Solo lectura</span>';
 
                 var fila = document.createElement('tr');
                 fila.innerHTML =
@@ -125,9 +136,10 @@
         // Dibujar la tabla al cargar la página
         renderTabla(proyectosAMostrar);
 
-        //  Eliminar proyecto
+        // Eliminar proyecto (solo tutores)
         function eliminar(id) {
-            if (!confirm('Eliminar este proyecto? Esta accion no se puede deshacer.')) 
+            if (!puedeEditarProyectos) return;
+            if (!confirm('Eliminar este proyecto? Esta accion no se puede deshacer.'))
                 return;
 
             var actualizados = getProyectos().filter(function(p) { return p.id !== id; });
