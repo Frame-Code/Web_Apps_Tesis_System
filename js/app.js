@@ -38,29 +38,9 @@ function cargarDatosEjemplo() {
         }
     ];
 
-   var avances = [
-        { 
-            id: 1, 
-            proyecto_id: 1, 
-            descripcion: 'Entrega del primer informe de requerimientos del sistema.', 
-            porcentaje_avance: 20, 
-            estado: 'aprobado',  
-            comentario_tutor: 'Excelente delimitación del problema.',
-            fecha_registro: '2026-02-15',
-            archivo_url: '../../uploads/avance1.pdf',
-            nombre_archivo: 'avance1.pdf'
-        },
-        { 
-            id: 2, 
-            proyecto_id: 1, 
-            descripcion: 'Diagramas de arquitectura de software y entidad relación.', 
-            porcentaje_avance: 15, 
-            estado: 'revision', 
-            comentario_tutor: 'Falta detallar las relaciones de la tabla de auditoría.',
-            fecha_registro: '2026-03-10',
-            archivo_url: '',
-            nombre_archivo: ''
-        }
+    var avances = [
+        { id: 1, proyecto_id: 1, titulo: 'Análisis de Requerimientos', porcentaje: 20, estado: 'aprobado',  fecha: '2026-02-15' },
+        { id: 2, proyecto_id: 1, titulo: 'Diseño de Arquitectura',     porcentaje: 35, estado: 'revision', fecha: '2026-03-10' }
     ];
 
     var tutorias = [
