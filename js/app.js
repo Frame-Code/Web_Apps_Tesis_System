@@ -37,8 +37,8 @@ function cargarDatosEjemplo() {
     ];
 
     var avances = [
-        { id: 1, proyecto_id: 1, titulo: 'Análisis de Requerimientos', porcentaje: 20, estado: 'aprobado',  fecha: '2026-02-15' },
-        { id: 2, proyecto_id: 1, titulo: 'Diseño de Arquitectura',     porcentaje: 35, estado: 'revision', fecha: '2026-03-10' }
+        { id: 1, proyecto_id: 1, titulo: 'Análisis de Requerimientos', porcentaje: 20, estado: 'aprobado',  fecha: '2026-02-15', descripcion: 'Análisis detallado de los requerimientos del sistema' },
+        { id: 2, proyecto_id: 1, titulo: 'Diseño de Arquitectura',     porcentaje: 35, estado: 'revision', fecha: '2026-03-10', descripcion: 'Diseño de la arquitectura del sistema' }
     ];
 
     var tutorias = [

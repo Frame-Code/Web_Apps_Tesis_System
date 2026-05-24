@@ -105,8 +105,8 @@
                 fila.innerHTML =
                     '<td>' + (proyecto ? proyecto.titulo : '<em class="text-muted">No asignado</em>') + '</td>' +
                     '<td>' + avance.descripcion + '</td>' +
-                    '<td>' + avance.porcentaje_avance + '%</td>' +
-                    '<td>' + formatearFecha(avance.fecha_registro) + '</td>' +
+                    '<td>' + avance.porcentaje + '%</td>' +
+                    '<td>' + formatearFecha(avance.fecha) + '</td>' +
                     '<td><span class="badge ' + badge + '">' + avance.estado + '</span></td>' +
                     '<td>' + accionesHtml + '</td>';
 
