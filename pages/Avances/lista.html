@@ -48,12 +48,11 @@
                                 <th>% Avance</th>
                                 <th>Fecha Registro</th>
                                 <th>Estado</th>
-                                <th>Documento</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-avances">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -81,8 +80,9 @@
             tbody.innerHTML = '';
 
             if (lista.length === 0) {
+                // Se cambió el colspan a 6 ya que ahora hay una columna menos
                 tbody.innerHTML = 
-                    '<tr><td colspan="7" class="text-center text-muted py-3">' +
+                    '<tr><td colspan="6" class="text-center text-muted py-3">' +
                     'No se encontraron avances registrados.</td></tr>';
                 return;
             }
@@ -94,12 +94,6 @@
                 });
 
                 var badge = coloresBadge[avance.estado] || 'bg-secondary';
-                
-                // Renderizado condicional del archivo adjunto
-                var archivoHtml = '—';
-                if (avance.archivo_url && avance.nombre_archivo) {
-                    archivoHtml = '<a href="' + avance.archivo_url + '" target="_blank" class="text-truncate d-inline-block" style="max-width: 150px;" title="' + avance.nombre_archivo + '">' + avance.nombre_archivo + '</a>';
-                }
 
                 var accionesHtml =
                     '<a href="formulario.html?id=' + avance.id + '" ' +
@@ -114,7 +108,6 @@
                     '<td>' + avance.porcentaje_avance + '%</td>' +
                     '<td>' + formatearFecha(avance.fecha_registro) + '</td>' +
                     '<td><span class="badge ' + badge + '">' + avance.estado + '</span></td>' +
-                    '<td>' + archivoHtml + '</td>' +
                     '<td>' + accionesHtml + '</td>';
 
                 tbody.appendChild(fila);
