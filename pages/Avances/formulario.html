@@ -1,0 +1,227 @@
+HTML
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avance — Sistema de Tesis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/estilos.css">
+</head>
+
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+    <header class="navbar navbar-dark bg-dark px-4 py-2">
+        <span class="navbar-brand fw-bold">Sistema de Gestión de Tesis</span>
+    </header>
+
+    <nav class="navbar navbar-dark bg-secondary px-4 py-1">
+        <div class="d-flex gap-3 flex-wrap">
+            <a href="../dashboard.html" class="nav-link">Inicio</a>
+            <a href="../proyectos/lista.html" class="nav-link">Proyectos</a>
+            <a href="lista.html" class="nav-link activo">Avances</a>
+            <a href="../tutorias/lista.html" class="nav-link">Tutorías</a>
+            <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
+            <a href="../usuarios/lista.html" class="nav-link">Usuarios</a>
+        </div>
+    </nav>
+
+    <main class="flex-grow-1 p-4">
+        <h2 class="mb-4" id="titulo-pagina">Nuevo Avance</h2>
+        <div class="card shadow-sm" style="max-width: 700px;">
+            <div class="card-body">
+
+                <div class="alert alert-danger d-none" id="alerta-error"></div>
+                <div class="alert alert-success d-none" id="alerta-exito"></div>
+
+                <form onsubmit="guardar(event)">
+                    <div class="mb-3">
+                        <label for="proyecto_id" class="form-label">Proyecto de Tesis: *</label>
+                        <select id="proyecto_id" name="proyecto_id" class="form-select" required>
+                            <option value="">— Selecciona el proyecto —</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción del Avance: *</label>
+                        <textarea id="descripcion" name="descripcion" class="form-control" rows="3" required
+                            placeholder="Detalla los entregables de este avance..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="porcentaje_avance" class="form-label">Porcentaje de Avance (0 a 100): *</label>
+                            <input type="number" id="porcentaje_avance" name="porcentaje_avance" class="form-control"
+                                min="0" max="100" required placeholder="Ej: 20">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_registro" class="form-label">Fecha de Registro: *</label>
+                            <input type="date" id="fecha_registro" name="fecha_registro" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="estado" class="form-label">Estado:</label>
+                        <select id="estado" name="estado" class="form-select">
+                            <option value="revision">En revisión</option>
+                            <option value="aprobado">Aprobado</option>
+                            <option value="desaprobado">Desaprobado</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="comentario_tutor" class="form-label">Comentarios del Tutor:</label>
+                        <textarea id="comentario_tutor" name="comentario_tutor" class="form-control" rows="2"
+                            placeholder="Observaciones o correcciones del tutor asignado..."></textarea>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="nombre_archivo" class="form-label">Nombre del Archivo:</label>
+                            <input type="text" id="nombre_archivo" name="nombre_archivo" class="form-control"
+                                placeholder="Ej: capitulo1_marcoteorico.pdf">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="archivo_url" class="form-label">Ruta / URL del Archivo:</label>
+                            <input type="text" id="archivo_url" name="archivo_url" class="form-control"
+                                placeholder="Ej: ../../uploads/doc.pdf">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a href="lista.html" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success">Guardar Avance</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-dark text-white text-center py-2 small">
+        &copy; 2026 Sistema de Gestión de Proyectos de Tesis
+    </footer>
+
+    <script src="../../js/app.js"></script>
+    <script>
+        // Carga dinámica de la lista de proyectos en el select
+        var proyectos = getProyectos();
+        var selectProyecto = document.getElementById('proyecto_id');
+
+        proyectos.forEach(function (p) {
+            var opcion = document.createElement('option');
+            opcion.value = p.id;
+            opcion.textContent = p.titulo;
+            selectProyecto.appendChild(opcion);
+        });
+
+        // Verificación de parámetros para Modo Edición
+        var params = new URLSearchParams(window.location.search);
+        var idEdicion = params.get('id');
+        var avanceEditar = null;
+
+        if (idEdicion) {
+            var todosLosAvances = getAvances();
+            avanceEditar = todosLosAvances.find(function (a) {
+                return a.id == idEdicion;
+            });
+
+            if (avanceEditar) {
+                document.getElementById('titulo-pagina').textContent = 'Editar Avance';
+
+                document.getElementById('proyecto_id').value = avanceEditar.proyecto_id;
+                document.getElementById('descripcion').value = avanceEditar.descripcion;
+                document.getElementById('porcentaje_avance').value = avanceEditar.porcentaje_avance;
+                document.getElementById('fecha_registro').value = avanceEditar.fecha_registro;
+                document.getElementById('estado').value = avanceEditar.estado;
+                document.getElementById('comentario_tutor').value = avanceEditar.comentario_tutor || '';
+                document.getElementById('nombre_archivo').value = avanceEditar.nombre_archivo || '';
+                document.getElementById('archivo_url').value = avanceEditar.archivo_url || '';
+            }
+        }
+
+        function mostrarAlerta(id, mensaje, tipo) {
+            var el = document.getElementById(id);
+            el.textContent = mensaje;
+            el.classList.remove('d-none');
+            if (tipo === 'exito') {
+                setTimeout(function () { el.classList.add('d-none'); }, 3000);
+            }
+        }
+
+        function guardar(event) {
+            event.preventDefault();
+
+            document.getElementById('alerta-error').classList.add('d-none');
+            document.getElementById('alerta-exito').classList.add('d-none');
+
+            var proyecto_id = parseInt(document.getElementById('proyecto_id').value);
+            var descripcion = document.getElementById('descripcion').value.trim();
+            var porcentaje_avance = parseInt(document.getElementById('porcentaje_avance').value) || 0;
+            var fecha_registro = document.getElementById('fecha_registro').value;
+            var estado = document.getElementById('estado').value;
+            var comentario_tutor = document.getElementById('comentario_tutor').value.trim();
+            var nombre_archivo = document.getElementById('nombre_archivo').value.trim();
+            var archivo_url = document.getElementById('archivo_url').value.trim();
+
+            // Validaciones básicas de negocio
+            if (!proyecto_id) {
+                mostrarAlerta('alerta-error', 'Debes seleccionar un proyecto válido.', 'error');
+                return;
+            }
+            if (!descripcion) {
+                mostrarAlerta('alerta-error', 'La descripción del avance es obligatoria.', 'error');
+                return;
+            }
+            if (porcentaje_avance < 0 || porcentaje_avance > 100) {
+                mostrarAlerta('alerta-error', 'El porcentaje debe estar comprendido entre 0 y 100.', 'error');
+                return;
+            }
+
+            var listaAvances = getAvances();
+
+            if (avanceEditar) {
+                // Actualizar registro existente
+                for (var i = 0; i < listaAvances.length; i++) {
+                    if (listaAvances[i].id == idEdicion) {
+                        listaAvances[i].proyecto_id = proyecto_id;
+                        listaAvances[i].descripcion = descripcion;
+                        listaAvances[i].porcentaje_avance = porcentaje_avance;
+                        listaAvances[i].fecha_registro = fecha_registro;
+                        listaAvances[i].estado = estado;
+                        listaAvances[i].comentario_tutor = comentario_tutor;
+                        listaAvances[i].nombre_archivo = nombre_archivo;
+                        listaAvances[i].archivo_url = archivo_url;
+                        break;
+                    }
+                }
+                guardarAvances(listaAvances);
+                mostrarAlerta('alerta-exito', 'Avance actualizado correctamente.', 'exito');
+            } else {
+                // Registrar nuevo objeto estructurado
+                var nuevoAvance = {
+                    id: nuevoId(listaAvances),
+                    proyecto_id: proyecto_id,
+                    descripcion: descripcion,
+                    porcentaje_avance: porcentaje_avance,
+                    fecha_registro: fecha_registro,
+                    estado: estado,
+                    comentario_tutor: comentario_tutor,
+                    nombre_archivo: nombre_archivo,
+                    archivo_url: archivo_url
+                };
+                listaAvances.push(nuevoAvance);
+                guardarAvances(listaAvances);
+                mostrarAlerta('alerta-exito', 'Avance guardado correctamente.', 'exito');
+                document.querySelector('form').reset();
+            }
+
+            // Retorno automático estructurado
+            setTimeout(function () {
+                window.location.href = 'lista.html';
+            }, 1500);
+        }
+    </script>
+</body>
+
+</html>
