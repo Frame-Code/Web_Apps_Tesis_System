@@ -1,7 +1,5 @@
-HTML
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -77,15 +75,10 @@ HTML
                     </div>
 
                     <div class="row mb-4">
-                        <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="col-12">
                             <label for="nombre_archivo" class="form-label">Nombre del Archivo:</label>
                             <input type="text" id="nombre_archivo" name="nombre_archivo" class="form-control"
                                 placeholder="Ej: capitulo1_marcoteorico.pdf">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="archivo_url" class="form-label">Ruta / URL del Archivo:</label>
-                            <input type="text" id="archivo_url" name="archivo_url" class="form-control"
-                                placeholder="Ej: ../../uploads/doc.pdf">
                         </div>
                     </div>
 
@@ -136,7 +129,6 @@ HTML
                 document.getElementById('estado').value = avanceEditar.estado;
                 document.getElementById('comentario_tutor').value = avanceEditar.comentario_tutor || '';
                 document.getElementById('nombre_archivo').value = avanceEditar.nombre_archivo || '';
-                document.getElementById('archivo_url').value = avanceEditar.archivo_url || '';
             }
         }
 
@@ -162,7 +154,6 @@ HTML
             var estado = document.getElementById('estado').value;
             var comentario_tutor = document.getElementById('comentario_tutor').value.trim();
             var nombre_archivo = document.getElementById('nombre_archivo').value.trim();
-            var archivo_url = document.getElementById('archivo_url').value.trim();
 
             // Validaciones básicas de negocio
             if (!proyecto_id) {
@@ -191,7 +182,6 @@ HTML
                         listaAvances[i].estado = estado;
                         listaAvances[i].comentario_tutor = comentario_tutor;
                         listaAvances[i].nombre_archivo = nombre_archivo;
-                        listaAvances[i].archivo_url = archivo_url;
                         break;
                     }
                 }
@@ -207,8 +197,7 @@ HTML
                     fecha_registro: fecha_registro,
                     estado: estado,
                     comentario_tutor: comentario_tutor,
-                    nombre_archivo: nombre_archivo,
-                    archivo_url: archivo_url
+                    nombre_archivo: nombre_archivo
                 };
                 listaAvances.push(nuevoAvance);
                 guardarAvances(listaAvances);
