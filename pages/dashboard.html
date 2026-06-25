@@ -3,42 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard — Tesis</title>
+    <title>Dashboard — Sistema de Tesis</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/estilos.css">
 </head>
 
 <body class="d-flex flex-column min-vh-100 bg-light">
 
-    <!-- header -->
+    <!-- Header -->
     <header class="navbar navbar-dark bg-dark px-4 py-2">
         <span class="navbar-brand fw-bold">Sistema de Gestión de Tesis</span>
     </header>
 
-    <!-- barra de navegación -->
+    <!-- Navegación -->
     <nav class="navbar navbar-dark bg-secondary px-4 py-1">
         <div class="d-flex gap-3 flex-wrap">
-            <a href="dashboard.html" class="nav-link activo">Inicio</a>
-            <a href="proyectos/lista.html" class="nav-link">Proyectos</a>
-            <a href="avances/lista.html" class="nav-link">Avances</a>
-            <a href="tutorias/lista.html" class="nav-link">Tutorías</a>
+            <a href="dashboard.html"           class="nav-link activo">Inicio</a>
+            <a href="proyectos/lista.html"     class="nav-link">Proyectos</a>
+            <a href="Avances/lista.html"       class="nav-link">Avances</a>
+            <a href="tutorias/lista.html"      class="nav-link">Tutorías</a>
             <a href="asistencia/registro.html" class="nav-link">Asistencia</a>
-            <a href="usuarios/lista.html" class="nav-link">Usuarios</a>
+            <a href="usuarios/lista.html"      class="nav-link">Usuarios</a>
         </div>
-    <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
+        <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
     </nav>
 
-    <!--Main-->
+    <!-- Main -->
     <main class="flex-grow-1 p-4">
 
         <h2 class="mb-1">Dashboard</h2>
+        <p class="text-muted mb-4" id="saludo">Bienvenido</p>
 
-        <!--Tarjetas de resumen -->
+        <!-- Tarjetas de resumen -->
         <div class="row g-3 mb-4">
             <div class="col-6 col-md-3">
                 <div class="card text-center shadow-sm">
                     <div class="card-body">
-                        <div class="display-5 fw-bold text-primary" id="total-proyectos">0</div>
+                        <div class="display-5 fw-bold text-primary" id="total-proyectos">
+                            <div class="spinner-border spinner-border-sm"></div>
+                        </div>
                         <div class="text-muted small">Proyectos</div>
                     </div>
                 </div>
@@ -47,7 +50,7 @@
             <div class="col-6 col-md-3">
                 <div class="card text-center shadow-sm">
                     <div class="card-body">
-                        <div class="display-5 fw-bold text-success" id="total-avances">0</div>
+                        <div class="display-5 fw-bold text-success" id="total-avances">—</div>
                         <div class="text-muted small">Avances</div>
                     </div>
                 </div>
@@ -56,7 +59,9 @@
             <div class="col-6 col-md-3">
                 <div class="card text-center shadow-sm">
                     <div class="card-body">
-                        <div class="display-5 fw-bold text-warning" id="total-tutorias">0</div>
+                        <div class="display-5 fw-bold text-warning" id="total-tutorias">
+                            <div class="spinner-border spinner-border-sm"></div>
+                        </div>
                         <div class="text-muted small">Tutorías</div>
                     </div>
                 </div>
@@ -65,15 +70,14 @@
             <div class="col-6 col-md-3">
                 <div class="card text-center shadow-sm">
                     <div class="card-body">
-                        <div class="display-5 fw-bold text-danger" id="total-usuarios">0</div>
+                        <div class="display-5 fw-bold text-danger" id="total-usuarios">—</div>
                         <div class="text-muted small">Usuarios</div>
                     </div>
                 </div>
             </div>
-
         </div>
 
-        <!--Tabla de proyectos recientes -->
+        <!-- Tabla de proyectos recientes -->
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Proyectos recientes</h5>
@@ -85,13 +89,18 @@
                         <tr>
                             <th>Título del proyecto</th>
                             <th>Estudiante</th>
+                            <th>Tutor</th>
                             <th>Estado</th>
-                            <th>Progreso</th>
                             <th>Fecha inicio</th>
                         </tr>
                     </thead>
                     <tbody id="tbody-proyectos">
-                        <!-- JavaScript llena este tbody -->
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">
+                                <div class="spinner-border spinner-border-sm me-2"></div>
+                                Cargando...
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -106,51 +115,117 @@
 
     <script src="../js/app.js"></script>
     <script>
-        // Leer todos los datos
-        var proyectos = getProyectos();
-        var avances   = getAvances();
-        var tutorias  = getTutorias();
-        var usuarios  = getUsuarios();
+        const API = '../backend/index.php';
 
-        document.getElementById('total-proyectos').textContent = proyectos.length;
-        document.getElementById('total-avances').textContent   = avances.length;
-        document.getElementById('total-tutorias').textContent  = tutorias.length;
-        document.getElementById('total-usuarios').textContent  = usuarios.length;
+        const BADGES = {
+            borrador:    'bg-secondary',
+            en_revision: 'bg-warning text-dark',
+            aprobado:    'bg-success',
+            en_curso:    'bg-primary',
+            finalizado:  'bg-dark',
+            archivado:   'bg-danger'
+        };
 
-        //Llenar tabla de proyectos recientes
-        var tbody = document.getElementById('tbody-proyectos');
+        const ETIQUETAS = {
+            borrador:    'Borrador',
+            en_revision: 'En revisión',
+            aprobado:    'Aprobado',
+            en_curso:    'En curso',
+            finalizado:  'Finalizado',
+            archivado:   'Archivado'
+        };
 
-        if (proyectos.length === 0) {
-            tbody.innerHTML =
-                '<tr><td colspan="5" class="text-center text-muted py-3">' +
-                'No hay proyectos registrados aún.</td></tr>';
-        } else {
-            proyectos.slice(0, 5).forEach(function(proyecto) {
+        async function init() {
+            // 1. Verificar sesión
+            let usuario;
+            try {
+                const res = await fetch(API + '?accion=sesion', { credentials: 'include' });
+                if (!res.ok) { window.location.href = 'login.html'; return; }
+                usuario = (await res.json()).data;
+            } catch (e) {
+                window.location.href = 'login.html';
+                return;
+            }
 
-                var estudiante = getUsuarioPorId(proyecto.estudiante_id);
-                var colorBadge = {
-                    'aprobado':   'bg-success',
-                    'en-curso':   'bg-primary',
-                    'revision':   'bg-warning text-dark',
-                    'suspendido': 'bg-danger',
-                    'completado': 'bg-purple'
-                }[proyecto.estado] || 'bg-secondary';
+            document.getElementById('saludo').textContent =
+                'Bienvenido, ' + usuario.nombre + ' ' + usuario.apellido +
+                ' (' + usuario.rol + ')';
 
-                var fila = document.createElement('tr');
+            // 2. Cargar proyectos y tutorías en paralelo
+            const [proyectosData, tutoriasData] = await Promise.all([
+                cargarProyectos(),
+                cargarTutorias()
+            ]);
+
+            document.getElementById('total-proyectos').textContent = proyectosData.length;
+            document.getElementById('total-tutorias').textContent  = tutoriasData.length;
+
+            // 3. Si es coordinador, cargar conteo de usuarios
+            if (usuario.rol === 'coordinador') {
+                cargarUsuarios();
+            }
+
+            renderTabla(proyectosData);
+        }
+
+        async function cargarProyectos() {
+            try {
+                const res  = await fetch(API + '?accion=listar_proyectos', { credentials: 'include' });
+                const json = await res.json();
+                return json.data || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        async function cargarTutorias() {
+            try {
+                const res  = await fetch(API + '?accion=listar_tutorias', { credentials: 'include' });
+                const json = await res.json();
+                return json.data || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        async function cargarUsuarios() {
+            try {
+                const res  = await fetch(API + '?accion=listar_usuarios', { credentials: 'include' });
+                const json = await res.json();
+                document.getElementById('total-usuarios').textContent = (json.data || []).length;
+            } catch (e) {
+                document.getElementById('total-usuarios').textContent = '—';
+            }
+        }
+
+        function renderTabla(lista) {
+            const tbody = document.getElementById('tbody-proyectos');
+            tbody.innerHTML = '';
+
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="5" class="text-center text-muted py-3">' +
+                    'No hay proyectos registrados aún.</td></tr>';
+                return;
+            }
+
+            lista.slice(0, 5).forEach(function(p) {
+                const badge = BADGES[p.estado]   || 'bg-secondary';
+                const etiq  = ETIQUETAS[p.estado] || p.estado;
+
+                const fila = document.createElement('tr');
                 fila.innerHTML =
-                    '<td>' + proyecto.titulo + '</td>' +
-                    '<td>' + (estudiante ? estudiante.nombre : '—') + '</td>' +
-                    '<td>' +
-                        '<span class="badge ' + colorBadge + '">' + proyecto.estado + '</span>' +
-                    '</td>' +
-                    '<td style="min-width:140px">' +
-                        '<small>' + proyecto.progreso + '%</small>' +
-                    '</td>' +
-                    '<td>' + formatearFecha(proyecto.fecha_inicio) + '</td>';
+                    '<td>' + p.titulo + '</td>' +
+                    '<td>' + (p.estudiante_nombre || '—') + '</td>' +
+                    '<td>' + (p.tutor_nombre      || '—') + '</td>' +
+                    '<td><span class="badge ' + badge + '">' + etiq + '</span></td>' +
+                    '<td>' + formatearFecha(p.fecha_inicio) + '</td>';
 
                 tbody.appendChild(fila);
             });
         }
+
+        init();
     </script>
 
 </body>
