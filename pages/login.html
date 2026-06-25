@@ -154,9 +154,10 @@
     <script src="../js/app.js"></script>
 
     <script>
+        const API = '../backend/index.php';
 
         const simAlert = document.getElementById('simAlert');
-        const simText = document.getElementById('simText');
+        const simText  = document.getElementById('simText');
 
         function notify(msg, type = 'info') {
             simAlert.className = `alert alert-${type} mt-3 border-0 shadow-sm`;
@@ -164,78 +165,88 @@
             simText.innerText = msg;
         }
 
+        // Si ya hay sesión activa, ir directo al dashboard
+        (async function verificarSesionExistente() {
+            try {
+                const res = await fetch(API + '?accion=sesion', { credentials: 'include' });
+                if (res.ok) window.location.href = 'dashboard.html';
+            } catch (e) { /* sin sesión, mostrar login normalmente */ }
+        })();
 
-        // FUNCIONALIDAD DE LOGIN
-        document.getElementById('formLogin').onsubmit = (e) => {
+        // FUNCIONALIDAD DE LOGIN — llama al backend real
+        document.getElementById('formLogin').onsubmit = async (e) => {
             e.preventDefault();
-            
-            const emailInput = document.getElementById('emailLogin').value.trim();
-            
-            const usuarios = typeof getUsuarios === 'function' ? getUsuarios() : JSON.parse(localStorage.getItem('tesis_usuarios')) || [];
-            
-            // Busca las coincidencia por el email y en cuando la encuetra muestra un mensaje
-            const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === emailInput.toLowerCase());
-            
-            if (usuarioEncontrado) {
-                notify(`¡Acceso correcto! Bienvenido, ${usuarioEncontrado.nombre}.`, 'success');
-                
-                // Guardar sesión activa en localStorage
-                localStorage.setItem('tesis_sesion_usuario', JSON.stringify(usuarioEncontrado));
 
-                // Redirige al panel principal y muentras un mensaje
-                setTimeout(() => {
-                    window.location.href = "dashboard.html";
-                }, 1200);
-            } else {
-                notify("Error: Las credenciales introducidas no constan en el sistema.", "danger");
+            const email    = document.getElementById('emailLogin').value.trim();
+            const password = document.getElementById('passwordLogin').value;
+
+            try {
+                const res  = await fetch(API + '?accion=login', {
+                    method:      'POST',
+                    credentials: 'include',
+                    headers:     { 'Content-Type': 'application/json' },
+                    body:        JSON.stringify({ email, password })
+                });
+                const json = await res.json();
+
+                if (!res.ok) {
+                    notify(json.error || 'Credenciales incorrectas.', 'danger');
+                    return;
+                }
+
+                notify(`¡Acceso correcto! Bienvenido, ${json.data.nombre}.`, 'success');
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+
+            } catch (err) {
+                notify('Error de conexión con el servidor.', 'danger');
             }
         };
 
-
-        // FUNCIONALIDAD DE REGISTRO
-        document.getElementById('formRegister').onsubmit = (e) => {
+        // FUNCIONALIDAD DE REGISTRO — solo estudiantes pueden auto-registrarse
+        document.getElementById('formRegister').onsubmit = async (e) => {
             e.preventDefault();
-            
-            const nombre = document.getElementById('nombreRegister').value.trim();
-            const email = document.getElementById('emailRegister').value.trim();
-            const rol = document.getElementById('rolRegister').value;
-            
-            let usuarios = typeof getUsuarios === 'function' ? getUsuarios() : JSON.parse(localStorage.getItem('tesis_usuarios')) || [];
-            
-            // Controla suceda el registro del mismo correo dos veces
-            const existe = usuarios.some(u => u.email.toLowerCase() === email.toLowerCase());
-            if (existe) {
-                notify("Este correo electrónico ya pertenece a una cuenta activa.", "warning");
+
+            const nombre   = document.getElementById('nombreRegister').value.trim();
+            const email    = document.getElementById('emailRegister').value.trim();
+            const rol      = document.getElementById('rolRegister').value;
+            const password = document.getElementById('passwordRegister').value;
+
+            // Solo estudiantes pueden registrarse solos; tutores los crea el coordinador
+            if (rol === 'tutor' || rol === 'coordinador') {
+                notify('Solo los estudiantes pueden auto-registrarse. Los tutores son creados por el coordinador.', 'warning');
                 return;
             }
-            
-            let nuevo_id = 1;
-            if (typeof nuevoId === 'function') {
-                nuevo_id = nuevoId(usuarios);
-            } else {
-                nuevo_id = usuarios.length > 0 ? Math.max(...usuarios.map(u => u.id)) + 1 : 1;
-            }
-            
-            const nuevoUsuario = {
-                id: nuevo_id,
-                nombre: nombre,
-                email: email,
-                rol: rol
-            };
-            
-            usuarios.push(nuevoUsuario);
-            localStorage.setItem('tesis_usuarios', JSON.stringify(usuarios));
-            
-            notify("Usuario registrado exitosamente en la base de datos local.", "success");
-            document.getElementById('formRegister').reset();
-            
 
-            setTimeout(() => {
-                simAlert.classList.add('d-none');
-                const loginTab = new bootstrap.Tab(document.getElementById('tab-login'));
-                loginTab.show();
-                document.getElementById('emailLogin').value = email;
-            }, 1800);
+            // El campo nombre completo se divide en nombre y apellido
+            const partes   = nombre.split(' ');
+            const apellido = partes.length > 1 ? partes.slice(1).join(' ') : '-';
+
+            try {
+                const res  = await fetch(API + '?accion=registro', {
+                    method:      'POST',
+                    credentials: 'include',
+                    headers:     { 'Content-Type': 'application/json' },
+                    body:        JSON.stringify({ nombre: partes[0], apellido, email, password, rol })
+                });
+                const json = await res.json();
+
+                if (!res.ok) {
+                    notify(json.error || 'Error al registrar.', 'danger');
+                    return;
+                }
+
+                notify('¡Cuenta creada! Ya puedes iniciar sesión.', 'success');
+                document.getElementById('formRegister').reset();
+
+                setTimeout(() => {
+                    simAlert.classList.add('d-none');
+                    new bootstrap.Tab(document.getElementById('tab-login')).show();
+                    document.getElementById('emailLogin').value = email;
+                }, 1800);
+
+            } catch (err) {
+                notify('Error de conexión con el servidor.', 'danger');
+            }
         };
     </script>
 </body>

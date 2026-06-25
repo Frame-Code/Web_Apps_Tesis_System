@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS criterio_evaluacion (
 );
 
 -- DATOS SEED (datos de prueba iniciales)
--- Contraseña para todos: "password123"  (hash bcrypt)
+-- Contraseña para todos: "password"  (hash bcrypt)
 INSERT INTO usuarios (nombre, apellido, email, password, rol) VALUES
 ('Ana',     'García',   'coordinador@tesis.edu', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'coordinador'),
 ('Carlos',  'Mendoza',  'tutor@tesis.edu',       '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'tutor'),

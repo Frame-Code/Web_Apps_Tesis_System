@@ -146,17 +146,38 @@ function getRolActual() {
     return u ? u.rol : null;
 }
 
-// Cierra la sesión y redirige al login (funciona desde cualquier nivel de carpeta)
+// Cierra la sesión en el servidor y redirige al login (funciona desde cualquier nivel de carpeta)
 function cerrarSesion() {
     localStorage.removeItem('tesis_sesion_usuario');
+
+    // Calcular la ruta relativa al login según la profundidad de la página actual
     var path      = window.location.pathname;
     var pagesIdx  = path.indexOf('/pages/');
+    var loginPath;
     if (pagesIdx === -1) {
-        window.location.href = 'pages/login.html';
-        return;
+        loginPath = 'pages/login.html';
+    } else {
+        var afterPages = path.substring(pagesIdx + 7);
+        var depth      = afterPages.split('/').length - 1;
+        var prefix     = depth > 0 ? '../' : '';
+        loginPath = prefix + 'login.html';
     }
-    var afterPages = path.substring(pagesIdx + 7); // texto después de '/pages/'
-    var depth      = afterPages.split('/').length - 1; // subdirectorios dentro de pages/
-    var prefix     = depth > 0 ? '../' : '';
-    window.location.href = prefix + 'login.html';
+
+    // Calcular la ruta al backend
+    var backendPath;
+    if (pagesIdx === -1) {
+        backendPath = 'backend/index.php';
+    } else {
+        var afterPages2 = path.substring(pagesIdx + 7);
+        var depth2      = afterPages2.split('/').length - 1;
+        var prefix2     = depth2 > 0 ? '../'.repeat(depth2) : '';
+        backendPath = prefix2 + '../backend/index.php';
+    }
+
+    // Destruir sesión en el servidor y luego redirigir
+    fetch(backendPath + '?accion=logout', { method: 'POST', credentials: 'include' })
+        .catch(function() { /* ignorar errores de red */ })
+        .finally(function() {
+            window.location.href = loginPath;
+        });
 }

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Proyecto — Sistema de Tesis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+    <!-- Header -->
+    <header class="navbar navbar-dark bg-dark px-4 py-2">
+        <span class="navbar-brand fw-bold">Sistema de Gestión de Tesis</span>
+    </header>
+
+    <!-- Navegación -->
+    <nav class="navbar navbar-dark bg-secondary px-4 py-1">
+        <div class="d-flex gap-3 flex-wrap">
+            <a href="../dashboard.html" class="nav-link">Inicio</a>
+            <a href="lista.html" class="nav-link activo">Proyectos</a>
+            <a href="../Avances/lista.html" class="nav-link">Avances</a>
+            <a href="../tutorias/lista.html" class="nav-link">Tutorías</a>
+            <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
+            <a href="../usuarios/lista.html" class="nav-link">Usuarios</a>
+        </div>
+        <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
+    </nav>
+
+    <!-- Main -->
+    <main class="flex-grow-1 p-4">
+
+        <!-- Spinner de carga inicial -->
+        <div id="cargando" class="text-center py-5 text-muted">
+            <div class="spinner-border me-2"></div> Cargando proyecto...
+        </div>
+
+        <!-- Contenido principal (oculto hasta que cargue) -->
+        <div id="contenido" class="d-none">
+
+            <!-- Título y botones -->
+            <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+                <div>
+                    <h2 class="mb-1" id="proyecto-titulo">—</h2>
+                    <span class="badge fs-6" id="proyecto-estado-badge">—</span>
+                </div>
+                <div class="d-flex gap-2 flex-wrap" id="botones-acciones">
+                    <a href="#" id="btn-editar" class="btn btn-outline-primary d-none">Editar</a>
+                    <button onclick="abrirModalEstado()" id="btn-cambiar-estado" class="btn btn-outline-warning d-none">
+                        Cambiar estado
+                    </button>
+                    <button onclick="abrirModalTutor()" id="btn-asignar-tutor" class="btn btn-outline-secondary d-none">
+                        Asignar tutor
+                    </button>
+                    <a href="lista.html" class="btn btn-secondary">← Volver</a>
+                </div>
+            </div>
+
+            <!-- Alerta para mensajes -->
+            <div class="alert d-none mb-3" id="alerta"></div>
+
+            <!-- Info del proyecto -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header fw-semibold">Información del proyecto</div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Área de conocimiento</dt>
+                                <dd class="col-sm-8" id="proyecto-area">—</dd>
+
+                                <dt class="col-sm-4">Descripción</dt>
+                                <dd class="col-sm-8" id="proyecto-descripcion">—</dd>
+
+                                <dt class="col-sm-4">Estudiante</dt>
+                                <dd class="col-sm-8" id="proyecto-estudiante">—</dd>
+
+                                <dt class="col-sm-4">Tutor</dt>
+                                <dd class="col-sm-8" id="proyecto-tutor">—</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header fw-semibold">Fechas</div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-12">Inicio</dt>
+                                <dd class="col-12" id="proyecto-fecha-inicio">—</dd>
+
+                                <dt class="col-12">Fin estimado</dt>
+                                <dd class="col-12" id="proyecto-fecha-fin">—</dd>
+
+                                <dt class="col-12">Registrado</dt>
+                                <dd class="col-12" id="proyecto-created">—</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de estados -->
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold">Historial de estados</div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Estado anterior</th>
+                                <th>Estado nuevo</th>
+                                <th>Cambiado por</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-historial"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-2 small">
+        &copy; 2026 Sistema de Gestión de Proyectos de Tesis
+    </footer>
+
+    <!-- Modal: Cambiar estado -->
+    <div class="modal fade" id="modal-estado" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cambiar estado del proyecto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nuevo estado *</label>
+                        <select id="nuevo-estado" class="form-select">
+                            <option value="borrador">Borrador</option>
+                            <option value="en_revision">En revisión</option>
+                            <option value="aprobado">Aprobado</option>
+                            <option value="en_curso">En curso</option>
+                            <option value="finalizado">Finalizado</option>
+                            <option value="archivado">Archivado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo <small class="text-muted">(requerido si rechaza o archiva)</small></label>
+                        <textarea id="motivo-estado" class="form-control" rows="2"
+                                  placeholder="Explica brevemente el motivo del cambio..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-warning" onclick="cambiarEstado()">Confirmar cambio</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Asignar tutor -->
+    <div class="modal fade" id="modal-tutor" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Asignar tutor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Selecciona un tutor *</label>
+                        <select id="select-tutor" class="form-select">
+                            <option value="">— Cargando... —</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" onclick="asignarTutor()">Asignar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/app.js"></script>
+    <script>
+        const API      = '../../backend/index.php';
+        const params   = new URLSearchParams(window.location.search);
+        const idProyecto = parseInt(params.get('id')) || 0;
+        let usuarioActual = null;
+        let proyectoActual = null;
+
+        const BADGES = {
+            borrador:    'bg-secondary',
+            en_revision: 'bg-warning text-dark',
+            aprobado:    'bg-success',
+            en_curso:    'bg-primary',
+            finalizado:  'bg-dark',
+            archivado:   'bg-danger'
+        };
+
+        const ETIQUETAS = {
+            borrador:    'Borrador',
+            en_revision: 'En revisión',
+            aprobado:    'Aprobado',
+            en_curso:    'En curso',
+            finalizado:  'Finalizado',
+            archivado:   'Archivado'
+        };
+
+        function mostrarAlerta(msg, tipo) {
+            const el = document.getElementById('alerta');
+            el.textContent = msg;
+            el.className   = 'alert alert-' + tipo + ' mb-3';
+            setTimeout(function() { el.classList.add('d-none'); }, 4000);
+        }
+
+        async function init() {
+            if (!idProyecto) { window.location.href = 'lista.html'; return; }
+
+            // Verificar sesión
+            try {
+                const res = await fetch(API + '?accion=sesion', { credentials: 'include' });
+                if (!res.ok) { window.location.href = '../login.html'; return; }
+                usuarioActual = (await res.json()).data;
+            } catch (e) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            await cargarProyecto();
+        }
+
+        async function cargarProyecto() {
+            try {
+                const res  = await fetch(API + '?accion=ver_proyecto&id=' + idProyecto, { credentials: 'include' });
+                const json = await res.json();
+
+                if (!res.ok || !json.data) {
+                    document.getElementById('cargando').innerHTML =
+                        '<div class="alert alert-danger">Proyecto no encontrado.</div>';
+                    return;
+                }
+
+                proyectoActual = json.data;
+                renderProyecto(proyectoActual);
+                renderHistorial(proyectoActual.historial || []);
+
+                document.getElementById('cargando').classList.add('d-none');
+                document.getElementById('contenido').classList.remove('d-none');
+
+            } catch (e) {
+                document.getElementById('cargando').innerHTML =
+                    '<div class="alert alert-danger">Error al cargar el proyecto.</div>';
+            }
+        }
+
+        function renderProyecto(p) {
+            const badge    = BADGES[p.estado]    || 'bg-secondary';
+            const etiqueta = ETIQUETAS[p.estado] || p.estado;
+
+            document.getElementById('proyecto-titulo').textContent       = p.titulo;
+            document.getElementById('proyecto-area').textContent         = p.area_conocimiento;
+            document.getElementById('proyecto-descripcion').textContent  = p.descripcion || 'Sin descripción.';
+            document.getElementById('proyecto-estudiante').textContent   = p.estudiante_nombre || '—';
+            document.getElementById('proyecto-tutor').textContent        = p.tutor_nombre || 'Sin asignar';
+            document.getElementById('proyecto-fecha-inicio').textContent = formatearFecha(p.fecha_inicio);
+            document.getElementById('proyecto-fecha-fin').textContent    = formatearFecha(p.fecha_fin_estimada);
+            document.getElementById('proyecto-created').textContent      = p.created_at ? p.created_at.substring(0,10).split('-').reverse().join('/') : '—';
+
+            const estadoBadge = document.getElementById('proyecto-estado-badge');
+            estadoBadge.className   = 'badge fs-6 ' + badge;
+            estadoBadge.textContent = etiqueta;
+
+            const rol = usuarioActual.rol;
+
+            // Botón editar: coordinador y tutor
+            if (rol === 'coordinador' || rol === 'tutor') {
+                const btnEditar = document.getElementById('btn-editar');
+                btnEditar.href = 'formulario.html?id=' + p.id;
+                btnEditar.classList.remove('d-none');
+            }
+
+            // Cambiar estado: coordinador y tutor
+            if (rol === 'coordinador' || rol === 'tutor') {
+                document.getElementById('btn-cambiar-estado').classList.remove('d-none');
+                document.getElementById('nuevo-estado').value = p.estado;
+            }
+
+            // Asignar tutor: solo coordinador
+            if (rol === 'coordinador') {
+                document.getElementById('btn-asignar-tutor').classList.remove('d-none');
+            }
+
+        }
+
+        function renderHistorial(historial) {
+            const tbody = document.getElementById('tbody-historial');
+            tbody.innerHTML = '';
+
+            if (!historial || historial.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">Sin cambios de estado registrados.</td></tr>';
+                return;
+            }
+
+            historial.forEach(function(h) {
+                const anterior = h.estado_anterior ? (ETIQUETAS[h.estado_anterior] || h.estado_anterior) : '<em class="text-muted">—</em>';
+                const nuevo    = ETIQUETAS[h.estado_nuevo] || h.estado_nuevo;
+                const fecha    = h.fecha_cambio ? h.fecha_cambio.substring(0,10).split('-').reverse().join('/') + ' ' + h.fecha_cambio.substring(11,16) : '—';
+
+                const fila = document.createElement('tr');
+                fila.innerHTML =
+                    `<td><small>${fecha}</small></td>` +
+                    `<td>${anterior}</td>` +
+                    `<td><strong>${nuevo}</strong></td>` +
+                    `<td><small>${h.usuario_nombre || '—'}</small></td>` +
+                    `<td><small class="text-muted">${h.motivo || '—'}</small></td>`;
+                tbody.appendChild(fila);
+            });
+        }
+
+        // ── Modal: Cambiar estado ────────────────────────────
+        function abrirModalEstado() {
+            document.getElementById('nuevo-estado').value  = proyectoActual.estado;
+            document.getElementById('motivo-estado').value = '';
+            new bootstrap.Modal(document.getElementById('modal-estado')).show();
+        }
+
+        async function cambiarEstado() {
+            const nuevoEstado = document.getElementById('nuevo-estado').value;
+            const motivo      = document.getElementById('motivo-estado').value.trim();
+
+            if (!nuevoEstado) { alert('Selecciona un estado.'); return; }
+
+            try {
+                const res  = await fetch(API + '?accion=cambiar_estado_proyecto&id=' + idProyecto, {
+                    method:      'POST',
+                    credentials: 'include',
+                    headers:     { 'Content-Type': 'application/json' },
+                    body:        JSON.stringify({ estado: nuevoEstado, motivo })
+                });
+                const json = await res.json();
+
+                bootstrap.Modal.getInstance(document.getElementById('modal-estado')).hide();
+
+                if (!res.ok) {
+                    mostrarAlerta(json.error || 'Error al cambiar estado.', 'danger');
+                    return;
+                }
+
+                mostrarAlerta('Estado cambiado correctamente.', 'success');
+                await cargarProyecto(); // recargar todo
+            } catch (e) {
+                mostrarAlerta('Error de conexión.', 'danger');
+            }
+        }
+
+        // ── Modal: Asignar tutor ────────────────────────────
+        async function abrirModalTutor() {
+            const sel = document.getElementById('select-tutor');
+            sel.innerHTML = '<option value="">— Cargando... —</option>';
+
+            try {
+                const res  = await fetch(API + '?accion=listar_tutores', { credentials: 'include' });
+                const json = await res.json();
+                sel.innerHTML = '<option value="">— Selecciona un tutor —</option>';
+                (json.data || []).forEach(function(t) {
+                    const op = document.createElement('option');
+                    op.value = t.id;
+                    op.textContent = t.nombre + ' ' + t.apellido;
+                    if (proyectoActual.tutor_id == t.id) op.selected = true;
+                    sel.appendChild(op);
+                });
+            } catch (e) {
+                sel.innerHTML = '<option value="">Error al cargar tutores</option>';
+            }
+
+            new bootstrap.Modal(document.getElementById('modal-tutor')).show();
+        }
+
+        async function asignarTutor() {
+            const tutorId = parseInt(document.getElementById('select-tutor').value) || 0;
+            if (!tutorId) { alert('Selecciona un tutor.'); return; }
+
+            try {
+                const res  = await fetch(API + '?accion=asignar_tutor&id=' + idProyecto, {
+                    method:      'POST',
+                    credentials: 'include',
+                    headers:     { 'Content-Type': 'application/json' },
+                    body:        JSON.stringify({ tutor_id: tutorId })
+                });
+                const json = await res.json();
+
+                bootstrap.Modal.getInstance(document.getElementById('modal-tutor')).hide();
+
+                if (!res.ok) {
+                    mostrarAlerta(json.error || 'Error al asignar tutor.', 'danger');
+                    return;
+                }
+
+                mostrarAlerta('Tutor asignado correctamente.', 'success');
+                await cargarProyecto();
+            } catch (e) {
+                mostrarAlerta('Error de conexión.', 'danger');
+            }
+        }
+
+        init();
+    </script>
+
+</body>
+</html>
