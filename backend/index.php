@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/controlador/AuthControlador.php';
+require_once __DIR__ . '/controlador/UsuarioControlador.php';
 require_once __DIR__ . '/controlador/ProyectoControlador.php';
 
 $accion = $_GET['accion'] ?? 'default';
@@ -30,6 +31,26 @@ switch ($accion) {
         break;
     case 'sesion':
         AuthControlador::sesionActual();
+        break;
+
+    // ── USUARIOS ─────────────────────────────────
+    case 'listar_usuarios':
+        UsuarioControlador::listar();
+        break;
+    case 'listar_tutores':
+        UsuarioControlador::listarTutores();
+        break;
+    case 'listar_estudiantes':
+        UsuarioControlador::listarEstudiantes();
+        break;
+    case 'ver_usuario':
+        UsuarioControlador::ver();
+        break;
+    case 'editar_usuario':
+        UsuarioControlador::editar();
+        break;
+    case 'desactivar_usuario':
+        UsuarioControlador::desactivar();
         break;
 
     // ── PROYECTOS ────────────────────────────────

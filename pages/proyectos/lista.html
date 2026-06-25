@@ -9,145 +9,208 @@
 </head>
 <body class="d-flex flex-column min-vh-100 bg-light">
 
-    <!-- header -->
+    <!-- Header -->
     <header class="navbar navbar-dark bg-dark px-4 py-2">
         <span class="navbar-brand fw-bold">Sistema de Gestión de Tesis</span>
     </header>
 
-    <!-- navegacion -->
+    <!-- Navegación -->
     <nav class="navbar navbar-dark bg-secondary px-4 py-1">
         <div class="d-flex gap-3 flex-wrap">
             <a href="../dashboard.html" class="nav-link">Inicio</a>
             <a href="lista.html" class="nav-link activo">Proyectos</a>
-            <a href="../avances/lista.html" class="nav-link">Avances</a>
+            <a href="../Avances/lista.html" class="nav-link">Avances</a>
             <a href="../tutorias/lista.html" class="nav-link">Tutorías</a>
             <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
             <a href="../usuarios/lista.html" class="nav-link">Usuarios</a>
         </div>
-    <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
+        <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
     </nav>
 
     <!-- Main -->
     <main class="flex-grow-1 p-4">
 
-        <h2 class="mb-4">Proyectos de Tesis</h2>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">Proyectos de Tesis</h2>
+            <a href="formulario.html" class="btn btn-success d-none" id="btn-nuevo">+ Nuevo Proyecto</a>
+        </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
-                    <!-- Solo visible para tutores -->
-                    <a href="formulario.html" class="btn btn-success d-none" id="btn-nuevo">
-                        + Nuevo Proyecto
-                    </a>
+        <!-- Filtros -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-body py-2">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small mb-1">Filtrar por estado</label>
+                        <select id="filtro-estado" class="form-select form-select-sm">
+                            <option value="">— Todos —</option>
+                            <option value="borrador">Borrador</option>
+                            <option value="en_revision">En revisión</option>
+                            <option value="aprobado">Aprobado</option>
+                            <option value="en_curso">En curso</option>
+                            <option value="finalizado">Finalizado</option>
+                            <option value="archivado">Archivado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small mb-1">Filtrar por área</label>
+                        <input type="text" id="filtro-area" class="form-control form-control-sm" placeholder="Ej: Inteligencia Artificial">
+                    </div>
+                    <div class="col-md-4">
+                        <button onclick="cargarProyectos()" class="btn btn-sm btn-primary w-100">Buscar</button>
+                    </div>
                 </div>
             </div>
+        </div>
 
+        <!-- Tabla -->
+        <div class="card shadow-sm">
             <div class="card-body p-0">
-                <table class="table table-striped table-hover mb-0">
+                <div id="contenedor-cargando" class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm me-2"></div> Cargando proyectos...
+                </div>
+                <table class="table table-striped table-hover mb-0 d-none" id="tabla-proyectos">
                     <thead class="table-dark">
                         <tr>
                             <th>Título</th>
+                            <th>Área</th>
                             <th>Estudiante</th>
                             <th>Tutor</th>
                             <th>Estado</th>
-                            <th>Progreso</th>
                             <th>Inicio</th>
                             <th>Fin estimado</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-proyectos">
-                        <!-- JavaScript llena este tbody -->
-                    </tbody>
+                    <tbody id="tbody-proyectos"></tbody>
                 </table>
             </div>
         </div>
 
     </main>
 
-    <!-- footer -->
+    <!-- Footer -->
     <footer class="bg-dark text-white text-center py-2 small">
         &copy; 2026 Sistema de Gestión de Proyectos de Tesis
     </footer>
 
     <script src="../../js/app.js"></script>
     <script>
-        // --- Control de roles ---
-        // Solo tutores pueden crear/editar/eliminar proyectos
-        var puedeEditarProyectos = (getRolActual() === 'tutor');
+        const API = '../../backend/index.php';
+        let usuarioActual = null;
 
-        if (puedeEditarProyectos) {
-            document.getElementById('btn-nuevo').classList.remove('d-none');
-        }
-
-        // Cargar todos los proyectos
-        var todosLosProyectos = getProyectos();
-        var proyectosAMostrar = todosLosProyectos;
-
-        var coloresBadge = {
-            'aprobado':   'bg-success',
-            'en-curso':   'bg-primary',
-            'revision':   'bg-warning text-dark',
-            'suspendido': 'bg-danger',
-            'completado': 'bg-purple'
+        const BADGES = {
+            borrador:    'bg-secondary',
+            en_revision: 'bg-warning text-dark',
+            aprobado:    'bg-success',
+            en_curso:    'bg-primary',
+            finalizado:  'bg-dark',
+            archivado:   'bg-danger'
         };
 
-        function renderTabla(lista) {
-            var tbody = document.getElementById('tbody-proyectos');
-            tbody.innerHTML = '';
+        const ETIQUETAS = {
+            borrador:    'Borrador',
+            en_revision: 'En revisión',
+            aprobado:    'Aprobado',
+            en_curso:    'En curso',
+            finalizado:  'Finalizado',
+            archivado:   'Archivado'
+        };
 
-            if (lista.length === 0) {
-                tbody.innerHTML =
-                    '<tr><td colspan="8" class="text-center text-muted py-3">' +
-                    'No se encontraron proyectos.</td></tr>';
+        async function init() {
+            // Verificar sesión
+            try {
+                const res  = await fetch(API + '?accion=sesion', { credentials: 'include' });
+                if (!res.ok) { 
+                    window.location.href = '../login.html'; 
+                    return; 
+                }
+                const json = await res.json();
+                usuarioActual = json.data;
+            } catch (e) {
+                window.location.href = '../login.html';
                 return;
             }
 
-            lista.forEach(function(proyecto) {
-                var estudiante = getUsuarioPorId(proyecto.estudiante_id);
-                var tutor      = proyecto.tutor_id ? getUsuarioPorId(proyecto.tutor_id) : null;
-                var badge      = coloresBadge[proyecto.estado] || 'bg-secondary';
+            // Mostrar botón nuevo solo para coordinador
+            if (usuarioActual.rol === 'coordinador') {
+                document.getElementById('btn-nuevo').classList.remove('d-none');
+            }
 
-                // Botones de acción: solo para tutores
-                var accionesHtml = puedeEditarProyectos
-                    ? '<a href="formulario.html?id=' + proyecto.id + '" ' +
-                      'class="btn btn-sm btn-outline-primary me-1">Editar</a>' +
-                      '<button onclick="eliminar(' + proyecto.id + ')" ' +
-                      'class="btn btn-sm btn-outline-danger">Eliminar</button>'
-                    : '<span class="text-muted small">Solo lectura</span>';
+            await cargarProyectos();
+        }
 
-                var fila = document.createElement('tr');
+        async function cargarProyectos() {
+            document.getElementById('contenedor-cargando').classList.remove('d-none');
+            document.getElementById('tabla-proyectos').classList.add('d-none');
+
+            const estado = document.getElementById('filtro-estado').value;
+            const area   = document.getElementById('filtro-area').value.trim();
+
+            let url = API + '?accion=listar_proyectos';
+            if (estado) url += '&estado=' + encodeURIComponent(estado);
+            if (area)   url += '&area='   + encodeURIComponent(area);
+
+            try {
+                const res  = await fetch(url, { credentials: 'include' });
+                const json = await res.json();
+
+                if (!res.ok) {
+                    alert('Error: ' + (json.error || 'No se pudieron cargar los proyectos'));
+                    return;
+                }
+
+                renderTabla(json.data);
+            } catch (e) {
+                alert('Error de conexión con el servidor.');
+            } finally {
+                document.getElementById('contenedor-cargando').classList.add('d-none');
+                document.getElementById('tabla-proyectos').classList.remove('d-none');
+            }
+        }
+
+        function renderTabla(lista) {
+            const tbody = document.getElementById('tbody-proyectos');
+            tbody.innerHTML = '';
+
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No se encontraron proyectos.</td></tr>';
+                return;
+            }
+
+            const puedeCambiarEstado = (usuarioActual.rol === 'coordinador' || usuarioActual.rol === 'tutor');
+            const esCoordinador      = (usuarioActual.rol === 'coordinador');
+
+            lista.forEach(function(p) {
+                const badge    = BADGES[p.estado]    || 'bg-secondary';
+                const etiqueta = ETIQUETAS[p.estado] || p.estado;
+
+                let acciones = `<a href="detalle.html?id=${p.id}" class="btn btn-sm btn-outline-info me-1">Ver</a>`;
+
+                if (esCoordinador || usuarioActual.rol === 'tutor') {
+                    acciones += `<a href="formulario.html?id=${p.id}" class="btn btn-sm btn-outline-primary me-1">Editar</a>`;
+                }
+
+                const fila = document.createElement('tr');
                 fila.innerHTML =
-                    '<td>' + proyecto.titulo + '</td>' +
-                    '<td>' + (estudiante ? estudiante.nombre : '—') + '</td>' +
-                    '<td>' + (tutor ? tutor.nombre : '<em class="text-muted">Sin asignar</em>') + '</td>' +
-                    '<td><span class="badge ' + badge + '">' + proyecto.estado + '</span></td>' +
-                    '<td style="min-width:130px">' +
-                        '<small>' + proyecto.progreso + '%</small>' +
-                    '</td>' +
-                    '<td>' + formatearFecha(proyecto.fecha_inicio) + '</td>' +
-                    '<td>' + formatearFecha(proyecto.fecha_fin) + '</td>' +
-                    '<td>' + accionesHtml + '</td>';
+                    `<td>${p.titulo}</td>` +
+                    `<td><small class="text-muted">${p.area_conocimiento}</small></td>` +
+                    `<td>${p.estudiante_nombre || '—'}</td>` +
+                    `<td>${p.tutor_nombre || '<em class="text-muted">Sin asignar</em>'}</td>` +
+                    `<td><span class="badge ${badge}">${etiqueta}</span></td>` +
+                    `<td>${formatearFecha(p.fecha_inicio)}</td>` +
+                    `<td>${formatearFecha(p.fecha_fin_estimada)}</td>` +
+                    `<td>${acciones}</td>`;
 
                 tbody.appendChild(fila);
             });
         }
 
-        // Dibujar la tabla al cargar la página
-        renderTabla(proyectosAMostrar);
+        // Permitir buscar con Enter en el campo de área
+        document.getElementById('filtro-area').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') cargarProyectos();
+        });
 
-        // Eliminar proyecto (solo tutores)
-        function eliminar(id) {
-            if (!puedeEditarProyectos) return;
-            if (!confirm('Eliminar este proyecto? Esta accion no se puede deshacer.'))
-                return;
-
-            var actualizados = getProyectos().filter(function(p) { return p.id !== id; });
-            guardarProyectos(actualizados);
-
-            proyectosAMostrar = proyectosAMostrar.filter(function(p) { return p.id !== id; });
-            renderTabla(proyectosAMostrar);
-        }
+        init();
     </script>
 
 </body>
