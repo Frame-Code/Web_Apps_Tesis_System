@@ -15,7 +15,7 @@ class ProyectoControlador {
     }
 
     public static function listar() {
-        if(!validateSession())
+        if(!self::validateSession())
             return;
 
         //Crea un array de filtros dependendiendo el que venta en la peticion GET
@@ -30,7 +30,7 @@ class ProyectoControlador {
     }
 
     public static function ver() {
-        if(!validateSession())
+        if(!self::validateSession())
             return;
 
         //Obtiene el id del proyecto
@@ -49,7 +49,7 @@ class ProyectoControlador {
     }
 
     public static function crear() {
-        if(!validateSession())
+        if(!self::validateSession())
             return;
 
         //Devuelve el cuerpo de peticion
@@ -76,11 +76,11 @@ class ProyectoControlador {
     }
 
     public static function editar() {
-        if(!validateSession())
+        if(!self::validateSession())
             return;
 
         //Valida que  el usuario que quiere editar el proyecto es coordinador ni tutor (solo ellos pueden editar un proyecto)
-        if (!in_array($sesion['rol'], ['coordinador', 'tutor'])) {
+        if (!in_array($_SESSION['usuario']['rol'], ['coordinador', 'tutor'])) {
             http_response_code(403); 
             echo json_encode(['error' => 'Acceso denegado']); 
             return;
@@ -100,40 +100,40 @@ class ProyectoControlador {
     }
 
     public static function cambiarEstado() {
-        if(!validateSession())
+        if(!self::validateSession())
             return;
 
         $id       = (int) ($_GET['id'] ?? 0);
         $datos    = json_decode(file_get_contents('php://input'), true);
         $proyecto = ProyectoModelo::obtenerPorId($id);
 
-        if (!$proyecto) { 
-            http_response_code(404); 
-            echo json_encode(['error' => 'Proyecto no encontrado']); 
-            return; 
-        }
-
-        if (empty($datos['estado'])) { 
-            echo json_encode(['error' => 'El estado es requerido']); 
-            return; 
-        }
-
-        if ($sesion['rol'] == 'estudiante') {
-            http_response_code(403); 
-            echo json_encode(['error' => 'Solo el coordinador o tutor puede cambiar el estado']); 
+        if (!$proyecto) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Proyecto no encontrado']);
             return;
         }
 
-        ProyectoModelo::cambiarEstado($id, $datos['estado'], $sesion['id'], $datos['motivo'] ?? null);
+        if (empty($datos['estado'])) {
+            echo json_encode(['error' => 'El estado es requerido']);
+            return;
+        }
+
+        if ($_SESSION['usuario']['rol'] == 'estudiante') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Solo el coordinador o tutor puede cambiar el estado']);
+            return;
+        }
+
+        ProyectoModelo::cambiarEstado($id, $datos['estado'], $_SESSION['usuario']['id'], $datos['motivo'] ?? null);
         echo json_encode(['success' => true, 'data' => ProyectoModelo::obtenerPorId($id)]);
     }
 
     public static function asignarTutor() {
-        if(!validateSession())
+        if(!self::validateSession())
             return;
 
         //Si no es coordinador no puede asignar un tutor
-        if ($sesion['rol'] !== 'coordinador') {
+        if ($_SESSION['usuario']['rol'] !== 'coordinador') {
             http_response_code(403); 
             echo json_encode(['error' => 'Solo el coordinador puede asignar tutores']); 
             return;
@@ -152,11 +152,11 @@ class ProyectoControlador {
     }
 
     public static function archivar() {
-        if(!validateSession())
+        if(!self::validateSession())
             return;
 
         //Si no es coordinadoor no puede archivar el proyecto
-        if ($sesion['rol'] !== 'coordinador') {
+        if ($_SESSION['usuario']['rol'] !== 'coordinador') {
             http_response_code(403); 
             echo json_encode(['error' => 'Solo el coordinador puede archivar proyectos']); 
             return;
