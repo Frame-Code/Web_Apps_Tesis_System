@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto — Sistema de Tesis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+    <!-- Header -->
+    <header class="navbar navbar-dark bg-dark px-4 py-2">
+        <span class="navbar-brand fw-bold">Sistema de Gestión de Tesis</span>
+    </header>
+
+    <!-- Navegación -->
+    <nav class="navbar navbar-dark bg-secondary px-4 py-1">
+        <div class="d-flex gap-3 flex-wrap">
+            <a href="../dashboard.html" class="nav-link">Inicio</a>
+            <a href="lista.html" class="nav-link activo">Proyectos</a>
+            <a href="../Avances/lista.html" class="nav-link">Avances</a>
+            <a href="../tutorias/lista.html" class="nav-link">Tutorías</a>
+            <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
+            <a href="../usuarios/lista.html" class="nav-link">Usuarios</a>
+        </div>
+        <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
+    </nav>
+
+    <!-- Main -->
+    <main class="flex-grow-1 p-4">
+        <h2 class="mb-4" id="titulo-pagina">Nuevo Proyecto</h2>
+
+        <div class="card shadow-sm" style="max-width: 720px;">
+            <div class="card-body">
+
+                <div class="alert alert-danger d-none" id="alerta-error"></div>
+                <div class="alert alert-success d-none" id="alerta-exito"></div>
+
+                <form id="form-proyecto" onsubmit="guardar(event)">
+
+                    <div class="mb-3">
+                        <label for="titulo" class="form-label">Título del proyecto *</label>
+                        <input type="text" id="titulo" class="form-control" required
+                               placeholder="Ej: Sistema de gestión de inventario">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea id="descripcion" class="form-control" rows="3"
+                                  placeholder="Describe brevemente el proyecto..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="area_conocimiento" class="form-label">Área de conocimiento *</label>
+                        <input type="text" id="area_conocimiento" class="form-control" required
+                               placeholder="Ej: Inteligencia Artificial, Redes, Bases de Datos...">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="estudiante_id" class="form-label">Estudiante *</label>
+                        <select id="estudiante_id" class="form-select" required>
+                            <option value="">— Cargando estudiantes... —</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="tutor_id" class="form-label">Tutor asignado</label>
+                        <select id="tutor_id" class="form-select">
+                            <option value="">— Sin asignar —</option>
+                        </select>
+                    </div>
+
+                    <!-- Solo visible en modo edición (coordinador puede cambiar estado desde aquí) -->
+                    <div class="mb-3 d-none" id="campo-estado">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select id="estado" class="form-select">
+                            <option value="borrador">Borrador</option>
+                            <option value="en_revision">En revisión</option>
+                            <option value="aprobado">Aprobado</option>
+                            <option value="en_curso">En curso</option>
+                            <option value="finalizado">Finalizado</option>
+                            <option value="archivado">Archivado</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_inicio" class="form-label">Fecha de inicio *</label>
+                            <input type="date" id="fecha_inicio" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_fin_estimada" class="form-label">Fecha fin estimada</label>
+                            <input type="date" id="fecha_fin_estimada" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="lista.html" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success" id="btn-guardar">
+                            Guardar proyecto
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-2 small">
+        &copy; 2026 Sistema de Gestión de Proyectos de Tesis
+    </footer>
+
+    <script src="../../js/app.js"></script>
+    <script>
+        const API      = '../../backend/index.php';
+        const params   = new URLSearchParams(window.location.search);
+        const idEditar = params.get('id');
+        let   usuarioActual = null;
+
+        function mostrarError(msg) {
+            const el = document.getElementById('alerta-error');
+            el.textContent = msg;
+            el.classList.remove('d-none');
+            document.getElementById('alerta-exito').classList.add('d-none');
+        }
+
+        function mostrarExitoForm(msg) {
+            const el = document.getElementById('alerta-exito');
+            el.textContent = msg;
+            el.classList.remove('d-none');
+            document.getElementById('alerta-error').classList.add('d-none');
+        }
+
+        async function init() {
+            // Verificar sesión
+            try {
+                const res = await fetch(API + '?accion=sesion', { credentials: 'include' });
+                if (!res.ok) { window.location.href = '../login.html'; return; }
+                const json = await res.json();
+                usuarioActual = json.data;
+            } catch (e) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Solo coordinador y tutor pueden acceder a este formulario
+            if (usuarioActual.rol === 'estudiante') {
+                window.location.href = 'lista.html';
+                return;
+            }
+
+            // Solo coordinador puede CREAR proyectos
+            if (!idEditar && usuarioActual.rol !== 'coordinador') {
+                window.location.href = 'lista.html';
+                return;
+            }
+
+            // Cargar estudiantes y tutores en paralelo
+            await Promise.all([cargarEstudiantes(), cargarTutores()]);
+
+            // Si estamos editando, cargar datos del proyecto
+            if (idEditar) {
+                document.getElementById('titulo-pagina').textContent = 'Editar Proyecto';
+                // El campo estado solo se muestra al editar
+                document.getElementById('campo-estado').classList.remove('d-none');
+                await cargarProyecto(idEditar);
+            }
+        }
+
+        async function cargarEstudiantes() {
+            try {
+                const res  = await fetch(API + '?accion=listar_estudiantes', { credentials: 'include' });
+                const json = await res.json();
+                const sel  = document.getElementById('estudiante_id');
+                sel.innerHTML = '<option value="">— Selecciona un estudiante —</option>';
+                (json.data || []).forEach(function(u) {
+                    const op = document.createElement('option');
+                    op.value       = u.id;
+                    op.textContent = u.nombre + ' ' + u.apellido;
+                    sel.appendChild(op);
+                });
+            } catch (e) {
+                console.error('Error cargando estudiantes', e);
+            }
+        }
+
+        async function cargarTutores() {
+            try {
+                const res  = await fetch(API + '?accion=listar_tutores', { credentials: 'include' });
+                const json = await res.json();
+                const sel  = document.getElementById('tutor_id');
+                sel.innerHTML = '<option value="">— Sin asignar —</option>';
+                (json.data || []).forEach(function(u) {
+                    const op = document.createElement('option');
+                    op.value       = u.id;
+                    op.textContent = u.nombre + ' ' + u.apellido;
+                    sel.appendChild(op);
+                });
+            } catch (e) {
+                console.error('Error cargando tutores', e);
+            }
+        }
+
+        async function cargarProyecto(id) {
+            try {
+                const res  = await fetch(API + '?accion=ver_proyecto&id=' + id, { credentials: 'include' });
+                const json = await res.json();
+
+                if (!res.ok || !json.data) {
+                    mostrarError('Proyecto no encontrado.');
+                    return;
+                }
+
+                const p = json.data;
+                document.getElementById('titulo').value            = p.titulo;
+                document.getElementById('descripcion').value       = p.descripcion      || '';
+                document.getElementById('area_conocimiento').value = p.area_conocimiento;
+                document.getElementById('fecha_inicio').value      = p.fecha_inicio;
+                document.getElementById('fecha_fin_estimada').value = p.fecha_fin_estimada || '';
+                document.getElementById('estado').value            = p.estado;
+                document.getElementById('estudiante_id').value     = p.estudiante_id;
+                document.getElementById('tutor_id').value          = p.tutor_id || '';
+            } catch (e) {
+                mostrarError('Error al cargar el proyecto.');
+            }
+        }
+
+        async function guardar(event) {
+            event.preventDefault();
+            document.getElementById('alerta-error').classList.add('d-none');
+            document.getElementById('alerta-exito').classList.add('d-none');
+
+            const titulo             = document.getElementById('titulo').value.trim();
+            const descripcion        = document.getElementById('descripcion').value.trim();
+            const area_conocimiento  = document.getElementById('area_conocimiento').value.trim();
+            const estudiante_id      = parseInt(document.getElementById('estudiante_id').value) || 0;
+            const tutor_id           = parseInt(document.getElementById('tutor_id').value) || null;
+            const fecha_inicio       = document.getElementById('fecha_inicio').value;
+            const fecha_fin_estimada = document.getElementById('fecha_fin_estimada').value || null;
+            const estado             = document.getElementById('estado').value;
+
+            // Validaciones frontend
+            if (!titulo) { mostrarError('El título es obligatorio.'); return; }
+            if (!area_conocimiento) { mostrarError('El área de conocimiento es obligatoria.'); return; }
+            if (!estudiante_id) { mostrarError('Debes seleccionar un estudiante.'); return; }
+            if (!fecha_inicio) { mostrarError('La fecha de inicio es obligatoria.'); return; }
+            if (fecha_fin_estimada && fecha_fin_estimada < fecha_inicio) {
+                mostrarError('La fecha fin no puede ser anterior a la fecha de inicio.');
+                return;
+            }
+
+            const payload = { titulo, descripcion, area_conocimiento, estudiante_id,
+                              tutor_id, fecha_inicio, fecha_fin_estimada };
+
+            const btn = document.getElementById('btn-guardar');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            try {
+                let url, metodo;
+
+                if (idEditar) {
+                    // Editar proyecto
+                    url    = API + '?accion=editar_proyecto&id=' + idEditar;
+                    metodo = 'POST';
+                    // Si es coordinador, incluir el cambio de estado
+                    if (usuarioActual.rol === 'coordinador') payload.estado = estado;
+                } else {
+                    // Crear proyecto nuevo
+                    url    = API + '?accion=crear_proyecto';
+                    metodo = 'POST';
+                }
+
+                const res  = await fetch(url, {
+                    method:      metodo,
+                    credentials: 'include',
+                    headers:     { 'Content-Type': 'application/json' },
+                    body:        JSON.stringify(payload)
+                });
+                const json = await res.json();
+
+                if (!res.ok) {
+                    mostrarError(json.error || 'Ocurrió un error al guardar.');
+                    return;
+                }
+
+                mostrarExitoForm(idEditar ? 'Proyecto actualizado correctamente.' : 'Proyecto creado correctamente.');
+                setTimeout(function() { window.location.href = 'lista.html'; }, 1500);
+
+            } catch (e) {
+                mostrarError('Error de conexión con el servidor.');
+            } finally {
+                btn.disabled    = false;
+                btn.textContent = 'Guardar proyecto';
+            }
+        }
+
+        init();
+    </script>
+
+</body>
+</html>

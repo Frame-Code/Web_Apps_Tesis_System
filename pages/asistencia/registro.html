@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sistema de Asistencia</title>
+
+    <link rel="stylesheet" href="../../css/asistencia.css">
+    
+</head>
+<body>
+
+    <div class="contenedor">
+
+        <h1>Sistema de Asistencia</h1>
+
+        <form id="formAsistencia">
+
+            <input
+                type="text"
+                id="estudiante"
+                placeholder="Nombre del estudiante"
+                required
+            >
+
+            <input
+                type="date"
+                id="fecha"
+                required
+            >
+
+            <select id="estado" required>
+
+                <option value="">
+                    Seleccione estado
+                </option>
+
+                <option value="Presente">
+                    Presente
+                </option>
+
+                <option value="Ausente">
+                    Ausente
+                </option>
+
+                <option value="Justificado">
+                    Justificado
+                </option>
+
+            </select>
+
+            <select id="modalidad" required>
+
+                <option value="">
+                    Seleccione modalidad
+                </option>
+
+                <option value="Virtual">
+                    Virtual
+                </option>
+
+                <option value="Presencial">
+                    Presencial
+                </option>
+
+            </select>
+
+            <textarea
+                id="observaciones"
+                placeholder="Observaciones"
+            ></textarea>
+
+            <button type="submit">
+                Guardar Asistencia
+            </button>
+
+        </form>
+
+
+        <h2>Historial de Asistencias</h2>
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Estudiante</th>
+
+                    <th>Fecha</th>
+
+                    <th>Estado</th>
+
+                    <th>Modalidad</th>
+
+                    <th>Observación</th>
+
+                    <th>Acciones</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="tablaAsistencia">
+
+            </tbody>
+
+        </table>
+
+
+        <h2>Resumen General</h2>
+
+        <div id="resumen"></div>
+
+    </div>
+
+    <script src="../../js/asistencia.js"></script>
+
+</body>
+</html>

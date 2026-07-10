@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorías — Sistema de Tesis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+    <!-- Header -->
+    <header class="navbar navbar-dark bg-dark px-4 py-2">
+        <span class="navbar-brand fw-bold">Sistema de Gestión de Tesis</span>
+    </header>
+
+    <!-- Navegación -->
+    <nav class="navbar navbar-dark bg-secondary px-4 py-1">
+        <div class="d-flex gap-3 flex-wrap">
+            <a href="../dashboard.html" class="nav-link">Inicio</a>
+            <a href="../proyectos/lista.html" class="nav-link">Proyectos</a>
+            <a href="../Avances/lista.html" class="nav-link">Avances</a>
+            <a href="lista.html" class="nav-link activo">Tutorías</a>
+            <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
+            <a href="../usuarios/lista.html" class="nav-link">Usuarios</a>
+        </div>
+        <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
+    </nav>
+
+    <!-- Main -->
+    <main class="flex-grow-1 p-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">Tutorías</h2>
+            <a href="formulario.html" class="btn btn-success d-none" id="btn-nueva">+ Nueva Tutoría</a>
+        </div>
+
+        <!-- Resumen de horas (visible cuando se filtra por proyecto) -->
+        <div class="alert alert-info d-none mb-3" id="resumen-horas">
+            <strong>Total horas realizadas en este proyecto:</strong>
+            <span id="total-horas">0</span> h
+        </div>
+
+        <!-- Filtros -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-body py-2">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small mb-1">Filtrar por estado</label>
+                        <select id="filtro-estado" class="form-select form-select-sm">
+                            <option value="">— Todos —</option>
+                            <option value="programada">Programada</option>
+                            <option value="realizada">Realizada</option>
+                            <option value="cancelada">Cancelada</option>
+                            <option value="reprogramada">Reprogramada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small mb-1">Filtrar por proyecto</label>
+                        <select id="filtro-proyecto" class="form-select form-select-sm">
+                            <option value="">— Todos —</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button onclick="cargarTutorias()" class="btn btn-sm btn-primary w-100">Buscar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div id="contenedor-cargando" class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm me-2"></div> Cargando tutorías...
+                </div>
+                <table class="table table-striped table-hover mb-0 d-none" id="tabla-tutorias">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Observaciones</th>
+                            <th>Proyecto</th>
+                            <th>Tutor</th>
+                            <th>Fecha y hora</th>
+                            <th>Duración</th>
+                            <th>Modalidad</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-tutorias"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-2 small">
+        &copy; 2026 Sistema de Gestión de Proyectos de Tesis
+    </footer>
+
+    <!-- Modal: Cambiar estado -->
+    <div class="modal fade" id="modal-estado" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cambiar estado de la tutoría</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="modal-id-tutoria">
+                    <div class="mb-3">
+                        <label class="form-label">Nuevo estado *</label>
+                        <select id="nuevo-estado" class="form-select">
+                            <option value="programada">Programada</option>
+                            <option value="realizada">Realizada</option>
+                            <option value="reprogramada">Reprogramada</option>
+                            <option value="cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones <small class="text-muted">(opcional)</small></label>
+                        <textarea id="modal-observaciones" class="form-control" rows="2"
+                                  placeholder="Ej: Se reprogramó por motivos del tutor..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-warning" onclick="confirmarCambioEstado()">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/app.js"></script>
+    <script>
+        const API = '../../backend/index.php';
+        let usuarioActual = null;
+
+        const BADGES_ESTADO = {
+            programada:   'bg-warning text-dark',
+            realizada:    'bg-success',
+            cancelada:    'bg-danger',
+            reprogramada: 'bg-info text-dark'
+        };
+
+        const ETIQUETAS_ESTADO = {
+            programada:   'Programada',
+            realizada:    'Realizada',
+            cancelada:    'Cancelada',
+            reprogramada: 'Reprogramada'
+        };
+
+        const BADGES_MODALIDAD = {
+            presencial: 'bg-primary',
+            virtual:    'bg-info text-dark',
+            asincrona:  'bg-secondary'
+        };
+
+        const ETIQUETAS_MODALIDAD = {
+            presencial: 'Presencial',
+            virtual:    'Virtual',
+            asincrona:  'Asíncrona'
+        };
+
+        // Convierte minutos a formato "Xh Ymin"
+        function formatDuracion(minutos) {
+            const h   = Math.floor(minutos / 60);
+            const min = minutos % 60;
+            if (h === 0) return min + 'min';
+            return min === 0 ? h + 'h' : h + 'h ' + min + 'min';
+        }
+
+        // Formatea DATETIME del servidor a "DD/MM/YYYY HH:MM"
+        function formatFechaHora(fechaHora) {
+            if (!fechaHora) return '—';
+            const [fecha, hora] = fechaHora.split(' ');
+            const [y, m, d]     = fecha.split('-');
+            return `${d}/${m}/${y} ${hora ? hora.substring(0,5) : ''}`;
+        }
+
+        async function init() {
+            // Verificar sesión
+            try {
+                const res = await fetch(API + '?accion=sesion', { credentials: 'include' });
+                if (!res.ok) { window.location.href = '../login.html'; return; }
+                usuarioActual = (await res.json()).data;
+            } catch (e) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Botón nueva tutoría: tutor y coordinador
+            if (usuarioActual.rol === 'tutor' || usuarioActual.rol === 'coordinador') {
+                document.getElementById('btn-nueva').classList.remove('d-none');
+            }
+
+            // Cargar proyectos en el filtro
+            await cargarFiltroProyectos();
+            await cargarTutorias();
+        }
+
+        async function cargarFiltroProyectos() {
+            try {
+                const res  = await fetch(API + '?accion=listar_proyectos', { credentials: 'include' });
+                const json = await res.json();
+                const sel  = document.getElementById('filtro-proyecto');
+                (json.data || []).forEach(function(p) {
+                    const op = document.createElement('option');
+                    op.value       = p.id;
+                    op.textContent = p.titulo;
+                    sel.appendChild(op);
+                });
+            } catch (e) {
+                console.error('Error cargando proyectos para filtro', e);
+            }
+        }
+
+        async function cargarTutorias() {
+            document.getElementById('contenedor-cargando').classList.remove('d-none');
+            document.getElementById('tabla-tutorias').classList.add('d-none');
+            document.getElementById('resumen-horas').classList.add('d-none');
+
+            const estado     = document.getElementById('filtro-estado').value;
+            const proyectoId = document.getElementById('filtro-proyecto').value;
+
+            let url = API + '?accion=listar_tutorias';
+            if (estado)     url += '&estado='      + encodeURIComponent(estado);
+            if (proyectoId) url += '&proyecto_id=' + encodeURIComponent(proyectoId);
+
+            try {
+                const res  = await fetch(url, { credentials: 'include' });
+                const json = await res.json();
+
+                if (!res.ok) {
+                    alert('Error: ' + (json.error || 'No se pudieron cargar las tutorías'));
+                    return;
+                }
+
+                renderTabla(json.data);
+
+                // Mostrar total de horas cuando se filtra por proyecto
+                if (proyectoId) {
+                    const horas = calcularHorasRealizadas(json.data);
+                    document.getElementById('total-horas').textContent = horas.toFixed(1);
+                    document.getElementById('resumen-horas').classList.remove('d-none');
+                }
+
+            } catch (e) {
+                alert('Error de conexión con el servidor.');
+            } finally {
+                document.getElementById('contenedor-cargando').classList.add('d-none');
+                document.getElementById('tabla-tutorias').classList.remove('d-none');
+            }
+        }
+
+        function calcularHorasRealizadas(lista) {
+            return lista
+                .filter(t => t.estado === 'realizada')
+                .reduce((sum, t) => sum + (t.duracion_min / 60), 0);
+        }
+
+        function renderTabla(lista) {
+            const tbody = document.getElementById('tbody-tutorias');
+            tbody.innerHTML = '';
+
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No se encontraron tutorías.</td></tr>';
+                return;
+            }
+
+            const puedeEditar = (usuarioActual.rol === 'tutor' || usuarioActual.rol === 'coordinador');
+
+            lista.forEach(function(t) {
+                const badgeEstado    = BADGES_ESTADO[t.estado]       || 'bg-secondary';
+                const etiqEstado     = ETIQUETAS_ESTADO[t.estado]    || t.estado;
+                const badgeModalidad = BADGES_MODALIDAD[t.modalidad] || 'bg-secondary';
+                const etiqModalidad  = ETIQUETAS_MODALIDAD[t.modalidad] || t.modalidad;
+
+                let acciones = '';
+                if (puedeEditar) {
+                    acciones += `<a href="formulario.html?id=${t.id}" class="btn btn-sm btn-outline-primary me-1">Editar</a>`;
+                    acciones += `<button onclick="abrirModalEstado(${t.id}, '${t.estado}')" class="btn btn-sm btn-outline-warning me-1">Estado</button>`;
+                    if (t.estado === 'programada') {
+                        acciones += `<button onclick="eliminar(${t.id})" class="btn btn-sm btn-outline-danger">Eliminar</button>`;
+                    }
+                } else {
+                    acciones = '<span class="text-muted small">Solo lectura</span>';
+                }
+
+                const fila = document.createElement('tr');
+                fila.innerHTML =
+                    `<td><small>${t.observaciones || '<em class="text-muted">—</em>'}</small></td>` +
+                    `<td><small>${t.proyecto_titulo || '—'}</small></td>` +
+                    `<td>${t.tutor_nombre || '—'}</td>` +
+                    `<td><small>${formatFechaHora(t.fecha_hora)}</small></td>` +
+                    `<td>${formatDuracion(t.duracion_min)}</td>` +
+                    `<td><span class="badge ${badgeModalidad}">${etiqModalidad}</span></td>` +
+                    `<td><span class="badge ${badgeEstado}">${etiqEstado}</span></td>` +
+                    `<td>${acciones}</td>`;
+
+                tbody.appendChild(fila);
+            });
+        }
+
+        // ── Modal: Cambiar estado ─────────────────────────────
+        function abrirModalEstado(id, estadoActual) {
+            document.getElementById('modal-id-tutoria').value       = id;
+            document.getElementById('nuevo-estado').value           = estadoActual;
+            document.getElementById('modal-observaciones').value    = '';
+            new bootstrap.Modal(document.getElementById('modal-estado')).show();
+        }
+
+        async function confirmarCambioEstado() {
+            const id            = document.getElementById('modal-id-tutoria').value;
+            const nuevoEstado   = document.getElementById('nuevo-estado').value;
+            const observaciones = document.getElementById('modal-observaciones').value.trim();
+
+            try {
+                const res  = await fetch(API + '?accion=cambiar_estado_tutoria&id=' + id, {
+                    method:      'POST',
+                    credentials: 'include',
+                    headers:     { 'Content-Type': 'application/json' },
+                    body:        JSON.stringify({ estado: nuevoEstado, observaciones: observaciones || null })
+                });
+                const json = await res.json();
+
+                bootstrap.Modal.getInstance(document.getElementById('modal-estado')).hide();
+
+                if (!res.ok) {
+                    alert(json.error || 'Error al cambiar estado.');
+                    return;
+                }
+
+                await cargarTutorias();
+            } catch (e) {
+                alert('Error de conexión.');
+            }
+        }
+
+        // ── Eliminar ─────────────────────────────────────────
+        async function eliminar(id) {
+            if (!confirm('¿Eliminar esta tutoría? Solo se pueden eliminar tutorías programadas.')) return;
+
+            try {
+                const res  = await fetch(API + '?accion=eliminar_tutoria&id=' + id, {
+                    method:      'POST',
+                    credentials: 'include',
+                    headers:     { 'Content-Type': 'application/json' },
+                    body:        '{}'
+                });
+                const json = await res.json();
+
+                if (!res.ok) {
+                    alert(json.error || 'Error al eliminar.');
+                    return;
+                }
+
+                await cargarTutorias();
+            } catch (e) {
+                alert('Error de conexión.');
+            }
+        }
+
+        // Buscar con Enter en filtro de estado
+        document.getElementById('filtro-estado').addEventListener('change', cargarTutorias);
+        document.getElementById('filtro-proyecto').addEventListener('change', cargarTutorias);
+
+        init();
+    </script>
+
+</body>
+</html>
