@@ -20,6 +20,7 @@ require_once __DIR__. '/controlador/AuthControlador.php';
 require_once __DIR__ . '/controlador/UsuarioControlador.php';
 require_once __DIR__ . '/controlador/ProyectoControlador.php';
 require_once __DIR__ . '/controlador/TutoriaControlador.php';
+require_once __DIR__ . '/controlador/AvanceControlador.php';
 
 $accion = $_GET['accion'] ?? 'default';
 
@@ -108,6 +109,24 @@ switch ($accion) {
         TutoriaControlador::eliminar();
         break;
 
+    // ── AVANCES ──────────────────────────────────
+    case 'listar_avances':
+        AvanceControlador::listar();
+        break;
+    case 'ver_avance':
+        AvanceControlador::ver();
+        break;
+    case 'crear_avance':
+        AvanceControlador::crear();
+        break;
+    case 'editar_avance':
+        AvanceControlador::editar();
+        break;
+    case 'eliminar_avance':
+        AvanceControlador::eliminar();
+        break;
+
+    // Default
     default:
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Acción no encontrada']);

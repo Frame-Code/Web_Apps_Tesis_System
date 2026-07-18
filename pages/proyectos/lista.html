@@ -181,7 +181,7 @@
             const esCoordinador      = (usuarioActual.rol === 'coordinador');
 
             lista.forEach(function(p) {
-                const badge    = BADGES[p.estado]    || 'bg-secondary';
+                const badge = BADGES[p.estado]    || 'bg-secondary';
                 const etiqueta = ETIQUETAS[p.estado] || p.estado;
 
                 let acciones = `<a href="detalle.html?id=${p.id}" class="btn btn-sm btn-outline-info me-1">Ver</a>`;

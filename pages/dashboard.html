@@ -50,7 +50,9 @@
             <div class="col-6 col-md-3">
                 <div class="card text-center shadow-sm">
                     <div class="card-body">
-                        <div class="display-5 fw-bold text-success" id="total-avances">—</div>
+                        <div class="display-5 fw-bold text-success" id="total-avances">
+                            <div class="spinner-border spinner-border-sm"></div>
+                        </div>
                         <div class="text-muted small">Avances</div>
                     </div>
                 </div>
@@ -151,14 +153,16 @@
                 'Bienvenido, ' + usuario.nombre + ' ' + usuario.apellido +
                 ' (' + usuario.rol + ')';
 
-            // 2. Cargar proyectos y tutorías en paralelo
-            const [proyectosData, tutoriasData] = await Promise.all([
+            // 2. Cargar proyectos, tutorías y avances en paralelo
+            const [proyectosData, tutoriasData, avancesData] = await Promise.all([
                 cargarProyectos(),
-                cargarTutorias()
+                cargarTutorias(),
+                cargarAvances()
             ]);
 
             document.getElementById('total-proyectos').textContent = proyectosData.length;
             document.getElementById('total-tutorias').textContent  = tutoriasData.length;
+            document.getElementById('total-avances').textContent   = avancesData.length;
 
             // 3. Si es coordinador, cargar conteo de usuarios
             if (usuario.rol === 'coordinador') {
@@ -181,6 +185,16 @@
         async function cargarTutorias() {
             try {
                 const res  = await fetch(API + '?accion=listar_tutorias', { credentials: 'include' });
+                const json = await res.json();
+                return json.data || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        async function cargarAvances() {
+            try {
+                const res  = await fetch(API + '?accion=listar_avances', { credentials: 'include' });
                 const json = await res.json();
                 return json.data || [];
             } catch (e) {
