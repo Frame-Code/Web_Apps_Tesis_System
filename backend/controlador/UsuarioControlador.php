@@ -4,9 +4,13 @@ require_once __DIR__ . '/../modelo/UsuarioModelo.php';
 class UsuarioControlador {
 
     private static function verificarSesion() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
         if (!isset($_SESSION['usuario'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'No autenticado']);
+            // Mandamos success: false para que JS lo maneje en el flujo normal
+            echo json_encode(['success' => false, 'error' => 'No autenticado']);
             return false;
         }
         return true;
@@ -17,8 +21,7 @@ class UsuarioControlador {
         if (!self::verificarSesion()) return;
 
         if ($_SESSION['usuario']['rol'] !== 'coordinador') {
-            http_response_code(403);
-            echo json_encode(['error' => 'Acceso denegado']);
+            echo json_encode(['success' => false, 'error' => 'Acceso denegado']);
             return;
         }
 
@@ -50,8 +53,7 @@ class UsuarioControlador {
         $usuario = UsuarioModelo::obtenerPorId($id);
 
         if (!$usuario) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Usuario no encontrado']);
+            echo json_encode(['success' => false, 'error' => 'Usuario no encontrado']);
             return;
         }
 
@@ -67,14 +69,12 @@ class UsuarioControlador {
         $datos   = json_decode(file_get_contents('php://input'), true);
 
         if ($sesion['rol'] !== 'coordinador' && $sesion['id'] !== $id) {
-            http_response_code(403);
-            echo json_encode(['error' => 'No puede editar este usuario']);
+            echo json_encode(['success' => false, 'error' => 'No puede editar este usuario']);
             return;
         }
 
         if (!UsuarioModelo::obtenerPorId($id)) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Usuario no encontrado']);
+            echo json_encode(['success' => false, 'error' => 'Usuario no encontrado']);
             return;
         }
 
@@ -87,8 +87,7 @@ class UsuarioControlador {
         if (!self::verificarSesion()) return;
 
         if ($_SESSION['usuario']['rol'] !== 'coordinador') {
-            http_response_code(403);
-            echo json_encode(['error' => 'Solo el coordinador puede desactivar usuarios']);
+            echo json_encode(['success' => false, 'error' => 'Solo el coordinador puede desactivar usuarios']);
             return;
         }
 

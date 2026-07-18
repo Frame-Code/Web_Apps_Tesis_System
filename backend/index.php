@@ -1,5 +1,10 @@
 <?php
-session_start();
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Credentials: true');
@@ -11,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once __DIR__ . '/controlador/AuthControlador.php';
+require_once __DIR__. '/controlador/AuthControlador.php';
 require_once __DIR__ . '/controlador/UsuarioControlador.php';
 require_once __DIR__ . '/controlador/ProyectoControlador.php';
 require_once __DIR__ . '/controlador/TutoriaControlador.php';
@@ -21,18 +26,21 @@ $accion = $_GET['accion'] ?? 'default';
 
 switch ($accion) {
 
-    // ── AUTH ─────────────────────────────────────
-    case 'registro':
-        AuthControlador::registro();
-        break;
+    // ── AUTH (Delegados directo al controlador) ──
     case 'login':
-        AuthControlador::login();
+        AuthControlador::login(); 
         break;
-    case 'logout':
-        AuthControlador::logout();
+
+    case 'registro':
+        AuthControlador::registro(); 
         break;
+
     case 'sesion':
         AuthControlador::sesionActual();
+        break;
+
+    case 'logout':
+        AuthControlador::logout();
         break;
 
     // ── USUARIOS ─────────────────────────────────
@@ -121,7 +129,7 @@ switch ($accion) {
     // Default
     default:
         http_response_code(404);
-        echo json_encode(['error' => 'Acción no encontrada']);
+        echo json_encode(['success' => false, 'error' => 'Acción no encontrada']);
         break;
 }
 ?>

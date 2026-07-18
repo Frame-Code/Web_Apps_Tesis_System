@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../config/Conexion.php';
 require_once __DIR__ . '/../modelo/TutoriaModelo.php';
 
 class TutoriaControlador {
