@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil — Sistema de Tesis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+    <!-- Header -->
+    <header class="navbar navbar-dark bg-dark px-4 py-2">
+        <span class="navbar-brand fw-bold">Sistema de Gestión de Tesis</span>
+    </header>
+
+    <!-- Navegación -->
+    <nav class="navbar navbar-dark bg-secondary px-4 py-1">
+        <div class="d-flex gap-3 flex-wrap">
+            <a href="../dashboard.html"           class="nav-link">Inicio</a>
+            <a href="../proyectos/lista.html"     class="nav-link">Proyectos</a>
+            <a href="../Avances/lista.html"       class="nav-link">Avances</a>
+            <a href="../tutorias/lista.html"      class="nav-link">Tutorías</a>
+            <a href="../asistencia/registro.html" class="nav-link">Asistencia</a>
+            <a href="lista.html"                  class="nav-link" id="link-usuarios">Usuarios</a>
+            <a href="perfil.html"                 class="nav-link activo">Mi Perfil</a>
+        </div>
+        <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light ms-auto">Cerrar sesión</button>
+    </nav>
+
+    <!-- Main -->
+    <main class="flex-grow-1 p-4">
+        <h2 class="mb-4">Mi Perfil</h2>
+
+        <div class="card shadow-sm" style="max-width: 640px;">
+            <div class="card-body">
+
+                <div class="alert alert-danger d-none"  id="alerta-error"></div>
+                <div class="alert alert-success d-none" id="alerta-exito"></div>
+
+                <div id="contenedor-cargando" class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm me-2"></div> Cargando perfil...
+                </div>
+
+                <form id="form-perfil" class="d-none" onsubmit="guardar(event)">
+
+                    <div class="mb-3">
+                        <label class="form-label">Rol</label>
+                        <div><span class="badge bg-primary" id="badge-rol">—</span>
+                             <span class="badge bg-success ms-1" id="badge-activo">—</span></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">Nombre *</label>
+                            <input type="text" id="nombre" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="apellido" class="form-label">Apellido *</label>
+                            <input type="text" id="apellido" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Correo electrónico *</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Miembro desde</label>
+                        <div id="fecha-registro" class="small text-muted">—</div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="../dashboard.html" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success" id="btn-guardar">Guardar cambios</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-2 small">
+        &copy; 2026 Sistema de Gestión de Proyectos de Tesis
+    </footer>
+
+    <script src="../../js/app.js"></script>
+    <script>
+        const API = '../../backend/index.php';
+        let usuarioActual = null;
+
+        const ETIQUETAS_ROL = {
+            coordinador: 'Coordinador',
+            tutor:       'Tutor',
+            estudiante:  'Estudiante'
+        };
+
+        function mostrarError(msg) {
+            document.getElementById('alerta-error').textContent = msg;
+            document.getElementById('alerta-error').classList.remove('d-none');
+            document.getElementById('alerta-exito').classList.add('d-none');
+        }
+
+        function mostrarExito(msg) {
+            document.getElementById('alerta-exito').textContent = msg;
+            document.getElementById('alerta-exito').classList.remove('d-none');
+            document.getElementById('alerta-error').classList.add('d-none');
+        }
+
+        async function init() {
+            // Verificar sesión
+            try {
+                const res = await fetch(API + '?accion=sesion', { credentials: 'include' });
+                if (!res.ok) { window.location.href = '../login.html'; return; }
+                usuarioActual = (await res.json()).data;
+            } catch (e) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Solo coordinador ve el link "Usuarios" (listado completo)
+            if (usuarioActual.rol !== 'coordinador') {
+                document.getElementById('link-usuarios').classList.add('d-none');
+            }
+
+            await cargarPerfil();
+        }
+
+        async function cargarPerfil() {
+            try {
+                const res  = await fetch(API + '?accion=ver_usuario&id=' + usuarioActual.id, { credentials: 'include' });
+                const json = await res.json();
+
+                if (!res.ok || !json.data) {
+                    mostrarError('No se pudo cargar tu perfil.');
+                    return;
+                }
+
+                const u = json.data;
+                document.getElementById('nombre').value   = u.nombre;
+                document.getElementById('apellido').value = u.apellido;
+                document.getElementById('email').value    = u.email;
+                document.getElementById('badge-rol').textContent    = ETIQUETAS_ROL[u.rol] || u.rol;
+                document.getElementById('badge-activo').textContent = u.activo == 1 ? 'Cuenta activa' : 'Cuenta desactivada';
+                document.getElementById('badge-activo').className   = 'badge ms-1 ' + (u.activo == 1 ? 'bg-success' : 'bg-danger');
+                document.getElementById('fecha-registro').textContent =
+                    formatearFecha(u.created_at ? u.created_at.substring(0, 10) : '');
+
+                document.getElementById('contenedor-cargando').classList.add('d-none');
+                document.getElementById('form-perfil').classList.remove('d-none');
+            } catch (e) {
+                mostrarError('Error de conexión con el servidor.');
+            }
+        }
+
+        async function guardar(event) {
+            event.preventDefault();
+            document.getElementById('alerta-error').classList.add('d-none');
+            document.getElementById('alerta-exito').classList.add('d-none');
+
+            const nombre   = document.getElementById('nombre').value.trim();
+            const apellido = document.getElementById('apellido').value.trim();
+            const email    = document.getElementById('email').value.trim();
+
+            if (!nombre || !apellido || !email) {
+                mostrarError('Todos los campos son obligatorios.');
+                return;
+            }
+
+            // El rol se envía tal cual está (el backend lo ignora si no eres coordinador)
+            const payload = { nombre, apellido, email, rol: usuarioActual.rol };
+
+            const btn = document.getElementById('btn-guardar');
+            btn.disabled    = true;
+            btn.textContent = 'Guardando...';
+
+            try {
+                const res  = await fetch(API + '?accion=editar_usuario&id=' + usuarioActual.id, {
+                    method:      'POST',
+                    credentials: 'include',
+                    headers:     { 'Content-Type': 'application/json' },
+                    body:        JSON.stringify(payload)
+                });
+                const json = await res.json();
+
+                if (!res.ok || json.success === false) {
+                    mostrarError(json.error || 'Ocurrió un error al guardar.');
+                    return;
+                }
+
+                mostrarExito('Perfil actualizado correctamente.');
+            } catch (e) {
+                mostrarError('Error de conexión con el servidor.');
+            } finally {
+                btn.disabled    = false;
+                btn.textContent = 'Guardar cambios';
+            }
+        }
+
+        init();
+    </script>
+
+</body>
+</html>

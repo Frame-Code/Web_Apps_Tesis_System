@@ -73,9 +73,15 @@ class UsuarioControlador {
             return;
         }
 
-        if (!UsuarioModelo::obtenerPorId($id)) {
+        $usuarioActual = UsuarioModelo::obtenerPorId($id);
+        if (!$usuarioActual) {
             echo json_encode(['success' => false, 'error' => 'Usuario no encontrado']);
             return;
+        }
+
+        // Un usuario que edita su propio perfil no puede cambiarse el rol a sí mismo
+        if ($sesion['rol'] !== 'coordinador') {
+            $datos['rol'] = $usuarioActual['rol'];
         }
 
         UsuarioModelo::editar($id, $datos);
