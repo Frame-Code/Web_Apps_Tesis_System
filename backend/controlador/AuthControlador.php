@@ -87,9 +87,11 @@ class AuthControlador {
     // Devuelve el usuario de la sesión activa
     public static function sesionActual() {
         if (isset($_SESSION['usuario'])) {
-            echo json_encode(['success' => true, 'usuario' => $_SESSION['usuario']]);
+            // Se envían las dos claves ('data' y 'usuario') porque distintas páginas
+            // del proyecto quedaron usando cada una de ellas — evita romper ninguna.
+            echo json_encode(['success' => true, 'data' => $_SESSION['usuario'], 'usuario' => $_SESSION['usuario']]);
         } else {
-            // Se mantiene una respuesta limpia para evitar romper el catch del login inicial
+            http_response_code(401);
             echo json_encode(['success' => false, 'error' => 'Sin sesión activa']);
         }
     }
