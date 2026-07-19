@@ -21,6 +21,8 @@ require_once __DIR__ . '/controlador/UsuarioControlador.php';
 require_once __DIR__ . '/controlador/ProyectoControlador.php';
 require_once __DIR__ . '/controlador/TutoriaControlador.php';
 require_once __DIR__ . '/controlador/AvanceControlador.php';
+require_once __DIR__ . '/controlador/AsistenciaControlador.php';
+
 
 $accion = $_GET['accion'] ?? 'default';
 
@@ -126,6 +128,27 @@ switch ($accion) {
         AvanceControlador::eliminar();
         break;
 
+        case 'listar_asistencias':
+    AsistenciaControlador::listar();
+    break;
+
+case 'ver_asistencia':
+    AsistenciaControlador::ver();
+    break;
+
+case 'crear_asistencia':
+    AsistenciaControlador::crear();
+    break;
+
+case 'editar_asistencia':
+    AsistenciaControlador::editar();
+    break;
+
+case 'eliminar_asistencia':
+    AsistenciaControlador::eliminar();
+    break;
+
+
     // Default
     default:
         http_response_code(404);
@@ -133,3 +156,4 @@ switch ($accion) {
         break;
 }
 ?>
+

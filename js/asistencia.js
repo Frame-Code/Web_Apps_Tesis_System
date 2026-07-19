@@ -1,260 +1,237 @@
-// BASE DE DATOS SIMULADA
-let asistencias = [];
+const API = "../../backend/index.php";
 
 const formulario = document.getElementById("formAsistencia");
-
 const tabla = document.getElementById("tablaAsistencia");
 
 let editando = false;
-
 let idEditar = null;
 
+window.onload = () => {
+    cargarProyectos();
+    cargarAsistencias();
+};
 
-// REGISTRAR Y EDITAR
-formulario.addEventListener("submit", function(e){
+async function cargarProyectos() {
 
-    e.preventDefault();
+    const res = await fetch(API + "?accion=listar_proyectos", {
+        credentials: "include"
+    });
 
+    const json = await res.json();
 
-    const estudiante =
-        document.getElementById("estudiante").value;
+    const select = document.getElementById("proyecto_id");
 
-    const fecha =
-        document.getElementById("fecha").value;
+    select.innerHTML =
+        '<option value="">Seleccione un proyecto</option>';
 
-    const estado =
-        document.getElementById("estado").value;
+    json.data.forEach(p => {
 
-    const modalidad =
-        document.getElementById("modalidad").value;
+        select.innerHTML +=
+            `<option value="${p.id}"
+                data-estudiante="${p.estudiante_nombre}">
+                ${p.titulo}
+            </option>`;
 
-    const observaciones =
-        document.getElementById("observaciones").value;
+    });
 
+}
 
-    // VALIDACIONES
-    if(
-        estudiante === "" ||
-        fecha === "" ||
-        estado === "" ||
-        modalidad === ""
-    ){
+document
+.getElementById("proyecto_id")
+.addEventListener("change", function(){
 
-        alert("Complete todos los campos");
+    const opcion = this.options[this.selectedIndex];
 
-        return;
-    }
-
-
-    // CREAR
-    if(!editando){
-
-        const asistencia = {
-
-            id: Date.now(),
-
-            estudiante,
-
-            fecha,
-
-            estado,
-
-            modalidad,
-
-            observaciones
-
-        };
-
-        asistencias.push(asistencia);
-
-    }else{
-
-        // EDITAR
-        asistencias = asistencias.map(a => {
-
-            if(a.id === idEditar){
-
-                return {
-
-                    ...a,
-
-                    estudiante,
-
-                    fecha,
-
-                    estado,
-
-                    modalidad,
-
-                    observaciones
-
-                };
-            }
-
-            return a;
-        });
-
-        editando = false;
-
-        idEditar = null;
-    }
-
-
-    mostrarAsistencias();
-
-    formulario.reset();
+    document.getElementById("estudiante").value =
+        opcion.dataset.estudiante || "";
 
 });
 
+formulario.addEventListener("submit", async function(e){
 
-// MOSTRAR ASISTENCIAS
-function mostrarAsistencias(){
+    e.preventDefault();
+
+    const datos = {
+
+        proyecto_id:
+            document.getElementById("proyecto_id").value,
+
+        fecha:
+            document.getElementById("fecha").value,
+
+        estado:
+            document.getElementById("estado").value,
+
+        modalidad:
+            document.getElementById("modalidad").value,
+
+        observaciones:
+            document.getElementById("observaciones").value
+
+    };
+
+    let accion =
+        "crear_asistencia";
+
+    let url =
+        API + "?accion=" + accion;
+
+    if(editando){
+
+        accion = "editar_asistencia";
+
+        url =
+        API + "?accion=editar_asistencia&id=" + idEditar;
+
+    }
+
+    const res = await fetch(url,{
+
+        method:"POST",
+
+        credentials:"include",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify(datos)
+
+    });
+
+    const json = await res.json();
+
+    if(!res.ok){
+
+        alert(json.error);
+
+        return;
+
+    }
+
+    formulario.reset();
+
+    editando = false;
+
+    idEditar = null;
+
+    cargarAsistencias();
+
+});
+
+async function cargarAsistencias(){
+
+    const res = await fetch(
+
+        API + "?accion=listar_asistencias",
+
+        {
+            credentials:"include"
+        }
+
+    );
+
+    const json = await res.json();
 
     tabla.innerHTML = "";
 
-
-    asistencias.forEach(asistencia => {
+    json.data.forEach(a=>{
 
         tabla.innerHTML += `
 
-            <tr>
+        <tr>
 
-                <td>${asistencia.estudiante}</td>
+            <td>${a.estudiante_nombre}</td>
 
-                <td>${asistencia.fecha}</td>
+            <td>${a.fecha}</td>
 
-                <td>${asistencia.estado}</td>
+            <td>${a.estado}</td>
 
-                <td>${asistencia.modalidad}</td>
+            <td>${a.modalidad}</td>
 
-                <td>${asistencia.observaciones}</td>
+            <td>${a.observaciones ?? ""}</td>
 
-                <td>
+            <td>
 
-                    <button onclick="editar(${asistencia.id})">
-                        Editar
-                    </button>
+                <button
+                    class="btn btn-warning btn-sm"
+                    onclick="editar(${a.id})">
 
-                    <button onclick="eliminar(${asistencia.id})">
-                        Eliminar
-                    </button>
+                    Editar
 
-                </td>
+                </button>
 
-            </tr>
+                <button
+                    class="btn btn-danger btn-sm"
+                    onclick="eliminarAsistencia(${a.id})">
+
+                    Eliminar
+
+                </button>
+
+            </td>
+
+        </tr>
 
         `;
+
     });
 
-
-    // RESUMEN
-    const total = asistencias.length;
-
-
-    const presentes = asistencias.filter(
-        a => a.estado === "Presente"
-    ).length;
-
-
-    const ausentes = asistencias.filter(
-        a => a.estado === "Ausente"
-    ).length;
-
-
-    const virtuales = asistencias.filter(
-        a => a.modalidad === "Virtual"
-    ).length;
-
-
-    const presenciales = asistencias.filter(
-        a => a.modalidad === "Presencial"
-    ).length;
-
-
-    const porcentaje = total > 0
-
-        ? ((presentes / total) * 100).toFixed(2)
-
-        : 0;
-
-
-    document.getElementById("resumen").innerHTML = `
-
-        <p>
-            <strong>Total registros:</strong>
-            ${total}
-        </p>
-
-        <p>
-            <strong>Presentes:</strong>
-            ${presentes}
-        </p>
-
-        <p>
-            <strong>Ausentes:</strong>
-            ${ausentes}
-        </p>
-
-        <p>
-            <strong>Virtuales:</strong>
-            ${virtuales}
-        </p>
-
-        <p>
-            <strong>Presenciales:</strong>
-            ${presenciales}
-        </p>
-
-        <p>
-            <strong>Porcentaje de asistencia:</strong>
-            ${porcentaje}%
-        </p>
-
-        <p>
-            <strong>Estado Final:</strong>
-            ${porcentaje >= 70 ? "Aprueba" : "Reprueba"}
-        </p>
-
-    `;
 }
 
+async function editar(id){
 
-// ELIMINAR
-function eliminar(id){
+    const res = await fetch(
 
-    asistencias = asistencias.filter(
-        a => a.id !== id
+        API + "?accion=ver_asistencia&id="+id,
+
+        {
+            credentials:"include"
+        }
+
     );
 
-    mostrarAsistencias();
-}
+    const json = await res.json();
 
+    const a = json.data;
 
-// EDITAR
-function editar(id){
-
-    const asistencia = asistencias.find(
-        a => a.id === id
-    );
-
-
-    document.getElementById("estudiante").value =
-        asistencia.estudiante;
+    document.getElementById("proyecto_id").value =
+        a.proyecto_id;
 
     document.getElementById("fecha").value =
-        asistencia.fecha;
+        a.fecha;
 
     document.getElementById("estado").value =
-        asistencia.estado;
+        a.estado;
 
     document.getElementById("modalidad").value =
-        asistencia.modalidad;
+        a.modalidad;
 
     document.getElementById("observaciones").value =
-        asistencia.observaciones;
-
+        a.observaciones;
 
     editando = true;
 
     idEditar = id;
+
+}
+
+async function eliminarAsistencia(id){
+
+    if(!confirm("¿Eliminar asistencia?"))
+        return;
+
+    await fetch(
+
+        API+"?accion=eliminar_asistencia&id="+id,
+
+        {
+            method:"POST",
+            credentials:"include"
+        }
+
+    );
+
+    cargarAsistencias();
+
 }
