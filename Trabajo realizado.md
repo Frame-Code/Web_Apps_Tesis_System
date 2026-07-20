@@ -8,4 +8,4 @@
 | **Tutorías** | ✅ Completo | Daniel Mora | `TutoriaModelo.php`, `TutoriaControlador.php`, `pages/tutorias/*` | Estaba asignado a "Jhon Intrigado", pero se retiro de la materia |
 | **Avances** | ✅ Completo | Ivan Guadalupe | `AvanceModelo.php`, `AvanceControlador.php`, `pages/Avances/*` | Todo fue realizado sin mayor problema |
 | **Usuarios** | ✅ Completo | Ignacio Naviciela (lista) + Daniel Mora (perfil) | `UsuarioModelo.php`, `UsuarioControlador.php`, `pages/usuarios/*` | Todo fue realizado sin mayor problema |
-| **Asistencia** | ❌ Incompleto | Jari Cali Ernesto | `registro.html`, `asistencia.js`, `AsistenciaController.php`, `AsistenciaModelo.php` | Todo realizado |
+| **Asistencia** |  ✅ Completo | Jari Cali Ernesto | `registro.html`, `asistencia.js`, `AsistenciaController.php`, `AsistenciaModelo.php` | Todo realizado |
